@@ -13,6 +13,7 @@ type PMContext
     PMContext() = PMContext(:false)
 end
 emit(c::PMContext, ex) = (push(c.code,ex); nothing)
+get_varnames(c::PMContext) = {p.name for p in c.assigned_vars}
 
 function code_iffalse_ret(c::PMContext, pred)
     :(if !($pred)
