@@ -50,3 +50,6 @@ type DomPattern <: Pattern
         new(p, dom)
     end
 end
+
+restrict(p::DomPattern, dom::Domain) = restrict(dintersect(dom, p.dom), p.p)
+restrict(p, dom::Domain) = DomPattern(p, dom)

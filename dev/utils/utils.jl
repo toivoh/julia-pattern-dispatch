@@ -1,4 +1,6 @@
 
+const doublecolon = @eval (:(::Int)).head
+
 quotevalue(val)     = expr(:quote, val)
 
 macro expect(pred)
