@@ -54,4 +54,4 @@ Fun fact:
     @pattern ff(x,{1,x}) = 1
     @pattern ff(x,x)     = 2
 
-does not print an ambiguity warning, since there is no overlap between finite patterns. The infinite sequence `x={1,1,1,...}` could be considered to match both, however.
+does not print an ambiguity warning, since there is no overlap between finite patterns. The infinitely nested sequence `x={1,{1,{1,...}}}` could be considered to match both, however.
