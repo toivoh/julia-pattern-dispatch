@@ -148,6 +148,8 @@ end
 pattern_le(x,y) = (s=unify(y,x)[2]; !s.nPgeX)
 pattern_ge(x,y) = (s=unify(x,y)[2]; !s.nPgeX)
 pattern_eq(x,y) = pattern_le(x,y) && pattern_ge(x,y)
+pattern_lt(x,y) = pattern_le(x,y) && !pattern_ge(x,y)
+pattern_gt(x,y) = pattern_ge(x,y) && !pattern_le(x,y)
 
 
 unite(s::Subs, ::NonePattern,x) = nonematch
@@ -159,7 +161,7 @@ unite(s::Subs, p::DomPattern,x) = unite(s, p.p,restrict(p.dom,x))
 
 function unite(s::Subs, p,x)
     @assert isatom(p)
-    if isa(x, Pattern); unite(nge!(s), x, p)               # ==> !(P >= X)
-    else;               isequalatoms(p,x) ? x : nonematch  # for atoms
+    if isa(x, Pattern); unite(nge!(s), x, p )               # ==> !(P >= X)
+    else;               isequal_atoms(p,x) ? x : nonematch  # for atoms
     end
 end
