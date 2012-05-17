@@ -7,7 +7,7 @@ req("patterns.jl")
 # == code_pmatch: patterns --> matching code ==================================
 
 type PMContext
-    assigned_vars::Set{PVar}
+    assigned_vars::Set{PVar}  # the PVar:s that have been assigned so far
     nomatch_ex    # expr to be returned if match fails
     code::Vector  # generated exprs
 
@@ -48,9 +48,30 @@ function code_pmatch(c::PMContext, p::DomPattern,xname::Symbol)
     emit(c, code_iffalse_ret(c, code_contains(p.dom,xname)))
     code_pmatch(c, p.p,xname)
 end
+function code_pmatch_container(c::PMContext, ps,xsname::Symbol)
+    emit(c, code_iffalse_ret(c, :(
+        isa(($xsname),($quotevalue(get_containertype(ps)))) &&
+        isequal(container_shape($xsname),($quotevalue(container_shape(ps))))
+    )))
+#     emit(c, code_iffalse_ret(c, :(isa(($xsname),($get_containertype(ps)))) ))
+#     emit(c, code_iffalse_ret(c, :(
+#       isequal(container_shape($xsname),($container_shape(ps)))
+#     )))
+    for (p, x_ex) in zip(ravel_container(ps), code_ravel_container(ps,xsname))
+        xname = gensym("x")
+        emit(c, :( ($xname)=($x_ex) ))
+        code_pmatch(c, p,xname)
+    end
+end
 function code_pmatch(c::PMContext, p,xname::Symbol)
-    @expect isatom(p)
-    emit(c, code_iffalse_ret(c, :(isequal_atoms(($quotevalue(p)),($xname))) ))
+    if is_container(p)
+        code_pmatch_container(c, p,xname)
+    else
+        @assert isatom(p)
+        emit(c, code_iffalse_ret(c, :(
+            isequal_atoms(($quotevalue(p)),($xname))
+        )))
+    end
 end
 
 
@@ -104,9 +125,13 @@ function ref(s::Subs, p::PVar)
         return p  # free PVar ==> return p itself
     end
 end
-function ref(s::Subs, x)
-    @assert isatom(x)
-    x  # return atoms unchanged
+function ref(s::Subs, p)
+    if is_container(p)
+        map_container(x->s[x], p)
+    else
+        @assert isatom(p)
+        p  # return atoms unchanged
+    end
 end
 
 function unitesubs(s::Subs, V::PVar,p)
@@ -159,9 +184,17 @@ unite(s::Subs, p::PVar,x) = unitesubs(s, p,x)
 #           will it always converge? 
 unite(s::Subs, p::DomPattern,x) = unite(s, p.p,restrict(p.dom,x))
 
+function unite_containers(s::Subs, ps,xs)
+    (isequiv_containers(ps,xs) ? map_container((p,x)->unite(s, p,x), ps,xs) :
+                                 nonematch)
+end
+
 function unite(s::Subs, p,x)
-    @assert isatom(p)
-    if isa(x, Pattern); unite(nge!(s), x, p )               # ==> !(P >= X)
-    else;               isequal_atoms(p,x) ? x : nonematch  # for atoms
+    @assert isatom(p)||is_container(p)
+    
+    # consider: should nge!(s) always be applied if x is a DomPattern?
+    if isa(x, Pattern);     unite(nge!(s), x,p)  # ==> !(P >= X)
+    elseif is_container(p); unite_containers(s, p,x)
+    else;                   isequal_atoms(p,x) ? x : nonematch  # for atoms
     end
 end

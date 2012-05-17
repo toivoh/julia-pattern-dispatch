@@ -1,4 +1,6 @@
 
+# -- Atoms --------------------------------------------------------------------
+
 # provisional atom definition
 isatom(::Number) = true
 isatom(::String) = true
@@ -14,6 +16,47 @@ isequal_atoms(x, y)          = false
 atom_eq(x::Number, y::Number) = (x == y)
 atom_eq(x, y) = is(x, y)
 
+
+# -- Containers ---------------------------------------------------------------
+
+is_containertype(T) = false
+is_container(x) = is_containertype(typeof(x))
+
+get_containertype{T}(::Type{T}) = error("not a container type: ", T)
+get_containertype(x) = get_containertype(typeof(x))
+
+function isequiv_containers(x,y)
+    (is(get_containertype(x),get_containertype(y)) && 
+        isequal(container_shape(x),container_shape(y)))
+end
+
+map_container(f) = error("need at least one container to know container type!")
+
+## Tuple as container type ##
+is_containertype( ::Tuple) = true
+get_containertype(::Tuple) = Tuple
+container_shape( x::Tuple) = length(x)
+
+map_container(f, args::Tuple...) = map(f, args...)
+ravel_container(x::Tuple) = x
+function code_ravel_container(x::Tuple, xname::Symbol) 
+ { :(($xname)[$k]) for k=1:length(x) }
+end
+
+## Array as container type ##
+typealias NTArray{N,T} Array{T,N}
+is_containertype{T,N}(::Type{Array{T,N}}) = true
+get_containertype{T,N}(::Type{Array{T,N}}) = NTArray{N}
+container_shape(x::Array) = size(x)
+
+map_container(f, args::Array...) = map(f, args...)
+ravel_container(x::Array) = x[:]
+function code_ravel_container(x::Array, xname::Symbol) 
+ { :(($xname)[$k]) for k=1:numel(x) }
+end
+
+
+# -- Patterns -----------------------------------------------------------------
 
 ## Domain: a set of values ##
 abstract Domain
