@@ -25,3 +25,13 @@ show_recode(:(x,y))
 #show_recode(:(x::Int))
 println()
 @pshowln recode_pattern_ex(:(x::Int))
+
+
+@assert eval(recode_pattern_ex(:1)) == 1
+@assert (eval(recode_pattern_ex(:x))::PVar).name == :x
+@assert eval(recode_pattern_ex(:(1,2))) == (1,2)
+@assert (eval(recode_pattern_ex(:(x,2)))::(PVar,Int))[2] == 2
+@assert is(eval(recode_pattern_ex(:(x,x)))::(PVar,PVar)...)
+@assert !is(eval(recode_pattern_ex(:(x,y)))::(PVar,PVar)...)
+
+
