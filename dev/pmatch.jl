@@ -21,6 +21,13 @@ function code_iffalse_ret(c::PMContext, pred)
 end
 
 ## code_pmatch: create pattern matching code from pattern ##
+function code_pmatch(p,xname::Symbol)
+    c = PMContext()
+    code_pmatch(c, p,xname)
+    expr(:block, c.code)
+end
+
+
 function code_pmatch(c::PMContext, p::NonePattern,xname::Symbol)
     error("code_pmatch: pattern never matches")
 end
@@ -40,6 +47,6 @@ function code_pmatch(c::PMContext, p::DomPattern,xname::Symbol)
 end
 function code_pmatch(c::PMContext, p,xname::Symbol)
     @expect isatom(p)
-    emit(c, code_iffalse_ret(c, :(isequal_atoms(($quoted_expr(p)),($xname))) ))
+    emit(c, code_iffalse_ret(c, :(isequal_atoms(($quotevalue(p)),($xname))) ))
 end
 

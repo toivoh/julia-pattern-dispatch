@@ -1,11 +1,16 @@
 
+# provisional atom definition
+isatom(::Number) = true
+isatom(::String) = true
+isatom(::Symbol) = true
+isatom(::Any) = false
 
 # Only same-type atoms compare equal.
 # Atom types T provide atom_eq(x::T, y::T)
 isequal_atoms{T}(x::T, y::T) = atom_eq(x, y) 
 isequal_atoms(x, y)          = false       
 
-# provisonal equivalence for atom types
+# provisional equivalence for atom types
 atom_eq(x::Number, y::Number) = (x == y)
 atom_eq(x, y) = is(x, y)
 
