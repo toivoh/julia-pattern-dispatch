@@ -1,7 +1,8 @@
 
 const doublecolon = @eval (:(::Int)).head
 
-quotevalue(val)     = expr(:quote, val)
+quotevalue(val) = expr(:quote, val)
+quotedtuple(t)  = expr(:tuple, {t...})
 
 is_expr(ex, head::Symbol) = (isa(ex, Expr) && (ex.head == head))
 function is_expr(ex, head::Symbol, nargs::Int)
@@ -10,7 +11,7 @@ end
 
 macro expect(pred)
     quote
-        ($pred) ? nothing : error("expected: ($string(pred)) == true")
+        ($pred) ? nothing : error("expected: ", ($string(pred))", == true")
     end
 end
 
