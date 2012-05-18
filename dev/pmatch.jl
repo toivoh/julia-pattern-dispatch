@@ -126,6 +126,7 @@ function ref(s::Subs, p::PVar)
         return p  # free PVar ==> return p itself
     end
 end
+ref(s::Subs, p::DomPattern) = restrict(s[p.p], p.dom)
 function ref(s::Subs, p)
     if is_container(p)
         # todo: early out if one element becomes nonematch?

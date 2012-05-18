@@ -34,12 +34,12 @@ function show_code_pmatch(p,vars::PVar...)
 end
 
 #@pvar X, Xi::Int
-X = pvar(:X)
+X, Xi = pvar(:X), pvar(:Xi, Int)
 
 show_code_pmatch(1)
-show_code_pmatch(X, X)
-#show_code_pmatch(Xi, Xi)
-show_code_pmatch((1,X), X)
-show_code_pmatch((X,X), X)
+show_code_pmatch(X,      X)
+show_code_pmatch(Xi,     Xi.p)
+show_code_pmatch((1,X),  X)
+show_code_pmatch((X,X),  X)
 
 

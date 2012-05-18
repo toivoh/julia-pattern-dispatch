@@ -39,3 +39,14 @@ end
 @ifmatch let (x,y,3)=(6,5)
     @show x,y
 end
+
+println()
+@ifmatch let x::Int=3
+    @show x
+end
+@ifmatch let x::Int=3.0
+    @show x
+end
+@ifmatch let x::Int="nnkj"
+    @show x
+end

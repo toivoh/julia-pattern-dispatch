@@ -83,20 +83,67 @@ end
 
 # Create a new pattern variable with the given name
 pvar(name::Symbol) = PVar(name)
+pvar{T}(name::Symbol, ::Type{T}) = dompattern(PVar(name), domain(T))
 
 show(io::IO, p::PVar) = print(io, "pvar(:$(p.name))")
 
 ## DomPattern: Intersection of a pattern and a domain ##
-type DomPattern <: StrictPattern
-    p  # any kind of pattern
+type DomPattern{P} <: StrictPattern
+    p::P
     dom::Domain
 
     function DomPattern(p, dom::Domain)
+        @expect isequal_type(P, PVar) || isequal_type(P, Any)
         # should avoid confusion; don't need/want patterns that are domains
         @expect !isa(p, Domain)  
         new(p, dom)
     end
 end
+typealias DomVar DomPattern{PVar}
+typealias DomContainer DomPattern{Any}
 
-restrict(p::DomPattern, dom::Domain) = restrict(dintersect(dom, p.dom), p.p)
-restrict(p, dom::Domain) = DomPattern(p, dom)
+restrict(::NonePattern, ::Domain) = nonematch
+restrict(p::DomPattern, dom::Domain) = dompattern(p.p, dintersect(dom, p.dom))
+restrict(p::PVar, dom::Domain) = dompattern(p, dom)
+function restrict(p, dom::Domain) 
+    if isatom(p)
+        has(dom, p) ? p : nonematch
+    elseif is_container(p)
+        dompattern(p, dom)
+    else
+        error("shouldn't be here!")
+    end
+end
+
+restrict{T}(p, ::Type{T}) = restrict(p, domain(T))
+
+
+# -- Domains ------------------------------------------------------------------
+
+type TypeDomain{T} <: Domain; end
+domain{T}(::Type{T}) = TypeDomain{T}()
+
+typealias Universe TypeDomain{Any}
+typealias NoneDomain TypeDomain{None}
+
+const universe = Universe()
+const nonedomain = NoneDomain()
+
+domtype{T}(::TypeDomain{T}) = T
+has(d::TypeDomain, x) = isa(x, domtype(d))
+
+show(io::IO, d::TypeDomain) = print(io, "domain(",domtype(d),")")
+
+
+dintersect{S,T}(::TypeDomain{S}, ::TypeDomain{T})=domain(tintersect(S,T))
+
+function code_contains{T}(::TypeDomain{T},xname::Symbol)
+    :( isa(($xname),($quotevalue(T))) )
+end
+
+
+
+dompattern(::PVar, ::NoneDomain) = nonematch
+dompattern(p, ::NoneDomain) = nonematch
+dompattern(p::PVar, dom::Domain) = DomVar(p, dom)
+dompattern(p, dom::Domain) = (@expect is_container(p); DomContainer(p, dom))
