@@ -1,4 +1,7 @@
 
+load("utils/req.jl")
+req("utils/utils.jl")
+
 # -- Atoms --------------------------------------------------------------------
 
 # provisional atom definition
@@ -25,9 +28,10 @@ is_container(x) = is_containertype(typeof(x))
 get_containertype{T}(::Type{T}) = error("not a container type: ", T)
 get_containertype(x) = get_containertype(typeof(x))
 
+isequal_type(S,T) = (S <: T)&&(T <: S)  # todo: better way to implement this?
 function isequiv_containers(x,y)
-    (is(get_containertype(x),get_containertype(y)) && 
-        isequal(container_shape(x),container_shape(y)))
+    (isequal_type(get_containertype(x),get_containertype(y)) && 
+     isequal(container_shape(x),container_shape(y)))
 end
 
 map_container(f) = error("need at least one container to know container type!")
