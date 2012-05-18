@@ -103,6 +103,7 @@ function unwind!(s::Subs)
 end
 
 # s[p]:  apply the substitution s to the pattern p
+ref(s::Subs, ::NonePattern) = nonematch
 function ref(s::Subs, p::PVar)
     if s.overdet;  return nonematch;  end
     if has(s.dict, p)
@@ -127,7 +128,11 @@ function ref(s::Subs, p::PVar)
 end
 function ref(s::Subs, p)
     if is_container(p)
-        map_container(x->s[x], p)
+        # todo: early out if one element becomes nonematch?
+        nm::Bool = false
+        p = map_container(x->(x=s[x]; nm |= is(x,nonematch); x), p)
+        nm ? nonematch : p
+        # map_container(x->(x=s[x])
     else
         @assert isatom(p)
         p  # return atoms unchanged
@@ -185,8 +190,17 @@ unite(s::Subs, p::PVar,x) = unitesubs(s, p,x)
 unite(s::Subs, p::DomPattern,x) = unite(s, p.p,restrict(p.dom,x))
 
 function unite_containers(s::Subs, ps,xs)
-    (isequiv_containers(ps,xs) ? map_container((p,x)->unite(s, p,x), ps,xs) :
-                                 nonematch)
+#     (isequiv_containers(ps,xs) ? map_container((p,x)->unite(s, p,x), ps,xs) :
+#                                  nonematch)
+    if isequiv_containers(ps,xs)
+        # todo: early out if one element becomes nonematch?
+        nm::Bool = false
+        zs = map_container((p,x)->(z=unite(s, p,x); nm |= is(z,nonematch); z),
+                           ps,xs)
+        nm ? nonematch : zs
+    else
+        nonematch
+    end
 end
 
 function unite(s::Subs, p,x)

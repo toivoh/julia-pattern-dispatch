@@ -6,8 +6,7 @@ req("utils/utils.jl")
 @symshowln unify(1, nonematch)
 @symshowln unify(nonematch, nonematch)
 
-X = pvar(:X)
-Y = pvar(:Y)
+X, Y, Z = map(pvar, (:X, :Y, :Z))
 
 @symshowln unify(X, nonematch)
 @symshowln unify(X, 1)
@@ -31,3 +30,18 @@ Y = pvar(:Y)
 @assert unify(X, Y)[1] == Y
 @assert unify(Y, X)[1] == X
 
+println()
+@symshowln unify(X, (1,2))
+@symshowln unify((X,), (1,2))
+@symshowln unify((X,Y), (1,2))
+@symshowln unify((1,Y), (1,2))
+@symshowln unify((1,Y), (X,2))
+@symshowln unify((1,X,Y), (X,Y,Z))
+@symshowln unify((1,Y,X), (X,Z,Y))
+@symshowln unify((1,X,Y), (X,Y,2))
+@symshowln unify((1,nonematch),(1,2))
+@symshowln unify((X,Y),((Y,Y),(Z,Z)))
+
+println()
+@show z, s = unify(X,1)
+@show s[({X,2},(X,3))]
