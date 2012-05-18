@@ -88,6 +88,8 @@ function add(mt::PatternMethodTable, m::PatternMethod)
         end
     end
 
+    ms = mt.methods = PatternMethod[ms[1:i-1]..., m, ms[i:n]...]
+
     # warn if new signature is ambiguous with an old one
     for m0 in ms
         lb, s = unify(m0.pattern, m.pattern)
@@ -101,7 +103,6 @@ function add(mt::PatternMethodTable, m::PatternMethod)
         end
     end
 
-    mt.methods = PatternMethod[ms[1:i-1]..., m, ms[i:n]...]
     nothing
 end
 

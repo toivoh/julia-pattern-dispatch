@@ -17,6 +17,12 @@ load("pdispatch.jl")
 @pattern r3(x,{y,z}) = 2
 @pattern r3({x,y},z) = 3
 
+@pattern r4(1)=1
+@pattern r4(x)=x
+
+@pattern r5(x)=x
+@pattern r5(1)=1
+
 # @pattern r4(1,x,y::Int) = 2
 # @pattern r4(2,x::Int,y) = 3
 
