@@ -207,7 +207,7 @@ function unite(s::Subs, p,x)
     @assert isatom(p)||is_container(p)
     
     # consider: should nge!(s) always be applied if x is a DomPattern?
-    if isa(x, Pattern);     unite(nge!(s), x,p)  # ==> !(P >= X)
+    if isa(x, StrictPattern);     unite(nge!(s), x,p)  # ==> !(P >= X)
     elseif is_container(p); unite_containers(s, p,x)
     else;                   isequal_atoms(p,x) ? x : nonematch  # for atoms
     end

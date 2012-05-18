@@ -65,19 +65,19 @@ end
 ## Domain: a set of values ##
 abstract Domain
 
-## Pattern: supertype of all pattern types that cannot be values ##
-# For given pattern variables values, a Pattern matches at most one value.
-abstract Pattern
+## StrictPattern: supertype of all pattern types that cannot be values ##
+# For given pattern variables values, a pattern matches at most one value.
+abstract StrictPattern
 
 ## NonePattern: The pattern that matches nothing ##
-type NonePattern <: Pattern; end  
+type NonePattern <: StrictPattern; end  
 const nonematch = NonePattern()
 
 show(io::IO, ::NonePattern) = print(io, "nonematch")
 
 ## PVar: Pattern variable that matches any value; but only one at a time ##
 # P::PVar and Q::PVar are the same variable only if is(P,Q)
-type PVar <: Pattern
+type PVar <: StrictPattern
     name::Symbol
 end
 
@@ -87,7 +87,7 @@ pvar(name::Symbol) = PVar(name)
 show(io::IO, p::PVar) = print(io, "pvar(:$(p.name))")
 
 ## DomPattern: Intersection of a pattern and a domain ##
-type DomPattern <: Pattern
+type DomPattern <: StrictPattern
     p  # any kind of pattern
     dom::Domain
 
