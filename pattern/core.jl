@@ -57,6 +57,11 @@ Atom{T}(value::T) = Atom{T}(value)
 
 const nonematch = NonePattern()
 
+
+isequal(x::Pattern, y::Pattern) = is(x,y)
+isequal(x::PVar, y::PVar) = is(x.var, y.var) && isequal(x.dom, y.dom)
+isequal(x::Atom, y::Atom) = isequal_atoms(x.value, y.value)
+
 ## PVar creation ##
 function pvar(var::PatternVar, dom::Domain) 
     is(dom, nonedomain) ? nonematch : PVar(var, dom)
