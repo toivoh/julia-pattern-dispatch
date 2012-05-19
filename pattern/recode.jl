@@ -10,7 +10,7 @@ aspattern(p::Pattern) = p
 aspattern(p::PatternVar) = pvar(p)
 function aspattern(p)
     if isatom(p); Atom(p)
-    else; error("unimplemented!")
+    else; error("unimplemented: aspattern(", typeof(p),")")
     end
 end
 
