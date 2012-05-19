@@ -1,4 +1,4 @@
-
+ 
 load("utils/req.jl")
 req("pmatch.jl")
 req("utils/utils.jl")
@@ -41,6 +41,18 @@ println()
 @symshowln unify((1,X,Y), (X,Y,2))
 @symshowln unify((1,nonematch),(1,2))
 @symshowln unify((X,Y),((Y,Y),(Z,Z)))
+
+@assert unify(X, (1,2))[1] == (1,2)
+@assert unify((X,), (1,2))[1] == nonematch
+@assert unify((X,Y), (1,2))[1] == (1,2)
+@assert unify((1,Y), (1,2))[1] == (1,2)
+@assert unify((1,Y), (X,2))[1] == (1,2)
+@assert unify((1,X,Y), (X,Y,Z))[1] == (1,1,1)
+@assert unify((1,Y,X), (X,Z,Y))[1] == (1,1,1)
+@assert unify((1,X,Y), (X,Y,2))[1] == nonematch
+@assert unify((1,nonematch),(1,2))[1] == nonematch
+@assert unify((X,Y),((Y,Y),(Z,Z)))[1] == (((Z,Z),(Z,Z)),(Z,Z))
+
 
 println()
 @show z, s = unify(X,1)

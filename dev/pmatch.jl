@@ -140,22 +140,26 @@ function ref(s::Subs, p)
     end
 end
 
-function unitesubs(s::Subs, V::PVar,p)
-    if has(s.dict, V)
-        p0 = s[V]  # look up the refined value of V
+storesubs(s::Subs, p::PVar,x::DomPattern) = (s.dict[p] = is(x.p,p) ? x.dom : x)
+storesubs(s::Subs, p::PVar,x) =             (if !is(x,p); s.dict[p] = x; end)
+function unitesubs(s::Subs, p::PVar,x)
+    if is(x,p);  return s[p];  end
+    if has(s.dict, p)
+        x0 = s[p]
+        # todo: use a form of equality that corresponds to not introducing
+        #       new constraints on p
+        if is(x, x0);  return x0;  end
+
         # consider: any other cases when this is not a new constraint?
         # (especially when !s.nPgeX)
-        if is(p,V) || isequal(p,p0);  return p0;  end
+
         # !s.nPgeX ==> this introduces constraints on rhs
         #          ==> s.nPgeX = true
-        pnew = unite(nge!(s), p0,p)    # unite the new value with the old
-        return s.dict[V] = pnew        # store the result and return
+        storesubs(s, p, unite(nge!(s), x,x0))
     else
-        if is(p,V)  return p;  end
-        s.dict[V] = p  # no old binding: store and return the new one
+        storesubs(s, p, x)
     end
 end
-
 
 # -- unify --------------------------------------------------------------------
 
