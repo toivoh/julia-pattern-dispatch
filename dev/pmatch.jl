@@ -146,16 +146,21 @@ function unitesubs(s::Subs, p::PVar,x)
     if is(x,p);  return s[p];  end
     if has(s.dict, p)
         x0 = s[p]
-        # todo: use a form of equality that corresponds to not introducing
-        #       new constraints on p
-        if is(x, x0);  return x0;  end
+        if isa(x0, Domain)
+            x = restrict(x, x0)
+            # consider: should this ever call nge!(s) ?
+        else
+            # todo: use a form of equality that corresponds to not introducing
+            #       new constraints on p
+            if is(x, x0);  return x0;  end
+            
+            # consider: any other cases when this is not a new constraint?
+            # (especially when !s.nPgeX)
 
-        # consider: any other cases when this is not a new constraint?
-        # (especially when !s.nPgeX)
-
-        # !s.nPgeX ==> this introduces constraints on rhs
-        #          ==> s.nPgeX = true
-        x = unite(nge!(s), x,x0)
+            # !s.nPgeX ==> this introduces constraints on rhs
+            #          ==> s.nPgeX = true
+            x = unite(nge!(s), x,x0)
+        end
     end
     storesubs(s, p, x)
 end
