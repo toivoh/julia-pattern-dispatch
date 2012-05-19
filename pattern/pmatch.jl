@@ -43,9 +43,10 @@ function code_pmatch(c::PMContext, p::PVar,xname::Symbol)
                isequal_atoms(($p.var.name),($xname))
         )))
     else
-        emit(c, :(
-            ($p.var.name) = ($xname)
-        ))   
+        emit(c, 
+            code_iffalse_ret(c, code_contains(p.dom,xname)),
+            :( ($p.var.name) = ($xname) )
+        )
         add(c.assigned_vars, p.var)
     end
 end
