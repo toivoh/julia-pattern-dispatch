@@ -155,10 +155,9 @@ function unitesubs(s::Subs, p::PVar,x)
 
         # !s.nPgeX ==> this introduces constraints on rhs
         #          ==> s.nPgeX = true
-        storesubs(s, p, unite(nge!(s), x,x0))
-    else
-        storesubs(s, p, x)
+        x = unite(nge!(s), x,x0)
     end
+    storesubs(s, p, x)
 end
 
 # -- unify --------------------------------------------------------------------
