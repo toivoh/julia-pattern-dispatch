@@ -16,9 +16,7 @@ show(io::IO, p::TuplePat) = print(io, "TuplePat$(p.ps)")
 function isequal(xs::TuplePat, ys::TuplePat) 
      all({isequal(x,y) for (x,y) in zip(xs.ps,ys.ps)})
 end
-dom(::TuplePat) = domain(Tuple)
-
-restrict(p::TuplePat, dom::Domain) = p # todo: fix!!!
+dom(::TuplePat) = universe  #domain(Tuple)
 
 function aspattern(t::Tuple)
     p = TuplePat(t...)

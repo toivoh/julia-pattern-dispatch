@@ -93,12 +93,17 @@ end
 restrict( ::NonePattern, ::Domain) = nonematch
 restrict(p::PVar, dom::Domain) = pvar(p.var, p.dom & dom)
 restrict(p::Atom, dom::Domain) = has(dom, p.value) ? p : nonematch
+function restrict(p::Pattern, dom::Domain)
+    if is(dom, universe); p
+    else error("unimplemented: restrict(", typeof(p),", ", typeof(dom),")")
+    end
+end
 
 #restrict(p, dom::Domain) = restrict(aspattern(p), dom)
 function restrict(p, dom::Domain)
     pp = aspattern(p)
     if typeof(pp) != typeof(p); restrict(pp, dom); end
-    error("unimplemented: restrict(", typeof(p),", Domain)")
+    error("unimplemented: restrict(", typeof(p),", ", typeof(dom),")")
 end
 restrict{T}(p, ::Type{T}) = restrict(p, domain(T))
 
