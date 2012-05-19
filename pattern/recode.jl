@@ -29,13 +29,20 @@ function code_create_pvars(c::RPContext)
     { :( ($tmpname)=pvar($quotevalue(name)) ) for (name, tmpname) in c.vars }
 end
 
-function recode_pattern_ex(ex)
+recode_pattern_ex(ex) = recode_pattern_ex(ex, false)
+function recode_pattern_ex(ex, raw::Bool)
     rpc = RPContext()
     pattern_ex = recode_pattern_ex(rpc, ex)
     pvar_defs  = code_create_pvars(rpc)
-    :( let ($pvar_defs...)
-        ($pattern_ex)
-    end )    
+    if raw
+      :( let ($pvar_defs...)
+          ($pattern_ex)
+        end)
+    else
+      :( let ($pvar_defs...)
+          aspattern($pattern_ex)
+        end)
+    end    
 end
 
 function recode_pattern_ex(c::RPContext, ex::Expr)
