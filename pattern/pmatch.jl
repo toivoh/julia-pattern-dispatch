@@ -62,13 +62,18 @@ end
 
 # == Subs: substitution from PatternVar:s to values/patterns ==================
 
-# A substitution from pattern variables to patterns/values
-type Subs
-    dict::Dict{PatternVar,Pattern}  # substitions Var => value: Domain/pattern
-    nPgeX::Bool           # true if unite(s, P,X) has disproved that P >= X
-    overdet::Bool         # true if no feasible substitution exists
+type Unfinished; end             
+# Value of an unfinished computation. Used to detect cyclic dependencies.
+const unfinished = Unfinished()
 
-    Subs() = new(Dict{PVar,Pattern}(), false, false)
+# A substitution from pattern variables to patterns/values
+typealias SubsDict Dict{PatternVar, Union(Pattern, Unfinished)}
+type Subs
+    dict::SubsDict  # substitions Var => value: Domain/pattern
+    nPgeX::Bool     # true if unite(s, P,X) has disproved that P >= X
+    overdet::Bool   # true if no feasible substitution exists
+
+    Subs() = new(SubsDict(), false, false)
 end
 nge!(s::Subs) = (s.nPgeX = true; s)
 
@@ -76,10 +81,6 @@ function show(io::IO,s::Subs)
     ge = s.nPgeX ? "  " : ">="
     print(io, s.overdet ? "Nosubs($ge)" : "Subs($ge, $(s.dict))")
 end
-
-type Unfinished; end             
-# Value of an unfinished computation. Used to detect cyclic dependencies.
-const unfinished = Unfinished()
 
 # rewrite all substitutions in s to depend only on free PVar:s
 function unwind!(s::Subs)
@@ -168,13 +169,13 @@ pattern_lt(x,y) = pattern_le(x,y) && !pattern_ge(x,y)
 pattern_gt(x,y) = pattern_ge(x,y) && !pattern_le(x,y)
 
 
-unite(s::Subs,  ::NoneDomain) = (s.overdet=true; nonematch)
+unite(s::Subs,  ::NonePattern) = (s.overdet=true; nonematch)
 unite(s::Subs, p::PVar) = s.unitesubs(p.var, p)
 unite(s::Subs, p::Composite) = error("unimplemented!")
 unite(s::Subs, p::Atom) = p
 
 unite(s::Subs, ::NoneDomain,::Pattern) = unite(s,nonematch)
-function(s::Subs, p::PVar,x::RegularPattern)
+function unite(s::Subs, p::PVar,x::RegularPattern)
     if dom(x) <= p.dom; unitesubs(s, p.var, x)
     else                unitesubs(nge!(s), p.var, restrict(x,p.dom))
     end

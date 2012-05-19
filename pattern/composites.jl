@@ -12,10 +12,19 @@ end
 
 show(io::IO, p::TuplePat) = print(io, "TuplePat$(p.ps)")
 
-isequal(x::TuplePat, y::TuplePat) = allp(isequal, x.ps,y.ps)
+#isequal(x::TuplePat, y::TuplePat) = allp(isequal, x.ps,y.ps)
+function isequal(xs::TuplePat, ys::TuplePat) 
+     all({isequal(x,y) for (x,y) in zip(xs.ps,ys.ps)})
+end
+dom(::TuplePat) = domain(Tuple)
 
+restrict(p::TuplePat, dom::Domain) = p # todo: fix!!!
 
-aspattern(p::Tuple) = TuplePat(p...)
+function aspattern(t::Tuple)
+    p = TuplePat(t...)
+    if any({is(x,nonematch) for x in p.ps}); return nonematch; end
+    return p   
+end
 
 function code_pmatch(c::PMContext, p::TuplePat,xname::Symbol)
     np = length(p.ps)
@@ -29,14 +38,16 @@ function code_pmatch(c::PMContext, p::TuplePat,xname::Symbol)
     end
 end
 
-function unite(s::Subs, ps::TuplePat,xs::TuplePat)
-    np, nx = length(ps), length(xs)
-    if np!=nx; return unitesubs(s, nonematch); end
-    ys = Array(T, np)
+_ref(s::Subs, p::TuplePat) = aspattern(map(p->s[p], p.ps))
+
+function unite(s::Subs, p::TuplePat,x::TuplePat)
+    np, nx = length(p.ps), length(x.ps)
+    if np!=nx; return unite(s, nonematch); end
+    ys = cell(np)
     for k=1:np
-        y = unite(s, ps[k], xs[k])
+        y = unite(s, p.ps[k], x.ps[k])
         if is(y, nonematch); return nonematch; end
         ys[k] = y
     end
-    tuple(ys...)
+    aspattern(tuple(ys...))
 end

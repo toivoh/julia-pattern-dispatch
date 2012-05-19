@@ -9,6 +9,7 @@ abstract Domain  ## A set of values
 type TypeDomain{T} <: Domain; end  ## The domain of values x such that x::T
 
 domain{T}(::Type{T}) = TypeDomain{T}()
+domain(T::Tuple)     = TypeDomain{T}()
 
 typealias Universe   TypeDomain{Any}
 typealias NoneDomain TypeDomain{None}
@@ -18,6 +19,11 @@ const nonedomain = NoneDomain()
 domtype{T}(::TypeDomain{T}) = T
 has(d::TypeDomain, x) = isa(x, domtype(d))
 (&){S,T}(::TypeDomain{S}, ::TypeDomain{T})=domain(tintersect(S,T))
+
+<={S,T}(x::TypeDomain{S},y::TypeDomain{T}) = S <: T
+<( x::TypeDomain, y::TypeDomain) = (x <= y) && !(y <= x)
+>=(x::TypeDomain, y::TypeDomain) = y <= x
+>( x::TypeDomain, y::TypeDomain) = y <  x
 
 show(io::IO, d::TypeDomain) = print(io, "domain(",domtype(d),")")
 code_contains(::Universe,::Symbol) = :true
@@ -57,10 +63,15 @@ Atom{T}(value::T) = Atom{T}(value)
 
 const nonematch = NonePattern()
 
+show(io::IO, ::NonePattern) = print(io, "nonematch")
 
 isequal(x::Pattern, y::Pattern) = is(x,y)
 isequal(x::PVar, y::PVar) = is(x.var, y.var) && isequal(x.dom, y.dom)
 isequal(x::Atom, y::Atom) = isequal_atoms(x.value, y.value)
+
+dom( ::NonePattern) = nonedomain
+dom(p::PVar) = p.dom
+dom{T}(p::Atom{T}) = domain(T)
 
 ## PVar creation ##
 function pvar(var::PatternVar, dom::Domain) 
@@ -83,7 +94,12 @@ restrict( ::NonePattern, ::Domain) = nonematch
 restrict(p::PVar, dom::Domain) = pvar(p.var, p.dom & dom)
 restrict(p::Atom, dom::Domain) = has(dom, p.value) ? p : nonematch
 
-restrict(p, dom::Domain) = restrict(aspattern(p), dom)
+#restrict(p, dom::Domain) = restrict(aspattern(p), dom)
+function restrict(p, dom::Domain)
+    pp = aspattern(p)
+    if typeof(pp) != typeof(p); restrict(pp, dom); end
+    error("unimplemented: restrict(", typeof(p),", Domain)")
+end
 restrict{T}(p, ::Type{T}) = restrict(p, domain(T))
 
 
