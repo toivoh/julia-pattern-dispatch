@@ -104,30 +104,26 @@ end
 
 # s[p]:  apply the substitution s to the pattern p
 ref(s::Subs, ::NonePattern) = nonematch
-function ref(s::Subs, p::PVar)
-    if s.overdet;  return nonematch;  end
-    if has(s.dict, p)
-        x = s.dict[p]
-        if is(x, unfinished)
-            # circular dependency ==> no finite pattern matches
-            s.overdet = true
-            return s.dict[p] = nonematch
-        elseif isa(x, Domain)
-            return restrict(p, x)
-        elseif isatom(x)
-            return x  # atoms can't be further substituted
-        else
-            # apply any relevant substitutions in s to x
-            s.dict[p] = unfinished  # mark unfinished to avoid infinite loops
-            x = s[x]                # look up recursively
-            return s.dict[p] = x    # store new value and return
-        end
+ref(s::Subs, p) = s.overdet ? nonematch : _ref(s, p)
+
+function ref_pvar(s::Subs, p::PVar, x::Unfinished) 
+    s.overdet = true
+    return s.dict[p] = nonematch
+end
+ref_pvar(s::Subs, p::PVar, x::Domain) = restrict(p, x)
+function ref_pvar(s::Subs, p::PVar, x)
+    if isatom(x)
+        return x  # atoms can't be further substituted
     else
-        return p  # free PVar ==> return p itself
+        # apply any relevant substitutions in s to x
+        s.dict[p] = unfinished  # mark unfinished to avoid infinite loops
+        x = s[x]                # look up recursively
+        return s.dict[p] = x    # store new value and return
     end
 end
-ref(s::Subs, p::DomPattern) = restrict(s[p.p], p.dom)
-function ref(s::Subs, p)
+_ref(s::Subs, p::PVar) = has(s.dict, p) ? ref_pvar(s, p, s.dict[p]) : p
+_ref(s::Subs, p::DomPattern) = restrict(s[p.p], p.dom)
+function _ref(s::Subs, p)
     if is_container(p)
         # todo: early out if one element becomes nonematch?
         nm::Bool = false
@@ -145,11 +141,12 @@ storesubs(s::Subs, p::PVar,x) =             (if !is(x,p); s.dict[p] = x; end)
 function unitesubs(s::Subs, p::PVar,x)
     if is(x,p);  return s[p];  end
     if has(s.dict, p)
-        x0 = s[p]
+        x0 = s.dict[p]
         if isa(x0, Domain)
             x = restrict(x, x0)
             # consider: should this ever call nge!(s) ?
         else
+            x0 = s[x0]
             # todo: use a form of equality that corresponds to not introducing
             #       new constraints on p
             if is(x, x0);  return x0;  end
