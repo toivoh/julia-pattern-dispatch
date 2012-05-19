@@ -20,6 +20,7 @@ has(d::TypeDomain, x) = isa(x, domtype(d))
 (&){S,T}(::TypeDomain{S}, ::TypeDomain{T})=domain(tintersect(S,T))
 
 show(io::IO, d::TypeDomain) = print(io, "domain(",domtype(d),")")
+code_contains(::Universe,::Symbol) = :true
 function code_contains{T}(::TypeDomain{T},xname::Symbol)
     :( isa(($xname),($quotevalue(T))) )
 end

@@ -1,7 +1,7 @@
 
 load("pattern/req.jl")
-load("pattern/core.jl")
-load("pattern/composites.jl")
+req("pattern/core.jl")
+req("pattern/composites.jl")
 load("pattern/recode.jl")
 req("prettyshow/prettyshow.jl")
 
@@ -9,7 +9,7 @@ function show_recode(ex)
     println()
     @pshow ex
     try
-        @pshow p=eval(recode_pattern_ex(ex, true))
+        @pshow p=eval(recode_pattern_ex(true, ex))
         @pshow aspattern(p)
     catch err
         @pshowln recode_pattern_ex(ex)
@@ -29,9 +29,9 @@ show_recode(:(x::Int))
 #@pshowln recode_pattern_ex(:(x::Int))
 
 
-@assert eval(recode_pattern_ex(:1, true)) == 1
+@assert eval(recode_pattern_ex(true, :1)) == 1
 #@assert (eval(recode_pattern_ex(:x))::PVar).name == :x
-@assert eval(recode_pattern_ex(:(1,2), true)) == (1,2)
+@assert eval(recode_pattern_ex(true, :(1,2))) == (1,2)
 # @assert (eval(recode_pattern_ex(:(x,2)))::(PVar,Int))[2] == 2
 # @assert is(eval(recode_pattern_ex(:(x,x)))::(PVar,PVar)...)
 # @assert !is(eval(recode_pattern_ex(:(x,y)))::(PVar,PVar)...)
