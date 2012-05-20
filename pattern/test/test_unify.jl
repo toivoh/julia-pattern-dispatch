@@ -59,6 +59,38 @@ println()
 @assert uni((X,Y),((Y,Y),(Z,Z)))[1] == aspattern((((Z,Z),(Z,Z)),(Z,Z)))
 
 
+# println()
+# @showln    uni(match(Any), match(Any))
+# @symshowln uni(match(Any),   1)
+# @symshowln uni(match(Real),  1)
+# @symshowln uni(match(Int),   1)
+# @symshowln uni(match(Float), 1)
+# @symshowln uni(nonematch,    1)
+
+# println()
+# @showln    uni(match(Real),  match(Real))
+# @symshowln uni(match(Real),  match(Int))
+# @symshowln uni(match(Float), match(Int))
+
+#@pvar Xr::Real, Xi::Int, Xf::Float
+Xr, Xi, Xf = pvar(:Xr,Real), pvar(:Xi,Int), pvar(:Xf,Float)
+
+println()
+@symshowln uni(Xr, Xi)
+@symshow   uni(Xi, Xf)
+
+println()
+@symshowln uni(Xi, 2)
+@symshowln uni(Xr, 2.0)
+@symshowln uni(Xi, 2.0)
+@symshowln uni(Xi, 2.5)
+    
+# println()
+# @symshowln uni(match(Any), 1)
+# @symshowln uni(match(Any), X)
+# @symshowln uni(match(Any), Xi)
+
+
 println()
 @show z, s = uni(X,1)
 @show s[aspattern(((X,2),(X,3)))]
