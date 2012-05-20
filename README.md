@@ -2,14 +2,14 @@ julia-pattern-dispatch v0.0
 ===========================
 Toivo Henningsson
 
-This package is an attempt to support method dispatch in Julia based on pattern matching. This is meant to be a generalization of Julia's multiple dispatch, though some of Julia's dispatch features are not implemented yet, e g varargs.
+This package is an attempt to support method dispatch in Julia based on pattern matching. This is meant to be a generalization of Julia's multiple dispatch; though some of Julia's dispatch features are not implemented yet, e g varargs.
 
 Examples
 --------
-Pattern functions are defined using the `@pattern` macro.
-The most specific pattern that matches the given arguments is invoked.
 These examples are gathered in `test/test.jl`.
 
+Pattern functions are defined using the `@pattern` macro.
+The most specific pattern that matches the given arguments is invoked.
 Signatures can contain a mixture of variables and literals:
 
     load("pattern/pdispatch.jl")
@@ -46,13 +46,27 @@ A warning is printed if a new definition makes dispatch ambiguous:
 
 prints
 
-    Warning: New @pattern method h(pvar(:x),(1,pvar(:z)))
-             is ambiguous with   h((pvar(:x),pvar(:y)),pvar(:z))
-             Make sure h((pvar(:x),pvar(:y)),(1,pvar(:z))) is defined first
+    Warning: New @pattern method ambiguous(x, (1, z,),)
+             is ambiguous with   ambiguous((x, y,), z,)
+             Make sure           ambiguous((x, y,), (1, z,),) is defined first.
+
+Signatures are evaluated at the point of method definition, after replacing symbols by pattern variables. This allows to invoke another function within the signature:
+
+    opnode(op, arg1, arg2) = {:call, op, arg1, arg2}
+
+    @pattern undot(opnode(:.+, arg1, arg2)) = opnode(:+, undot(arg1), undot(arg2))
+    @pattern undot(opnode(:.*, arg1, arg2)) = opnode(:*, undot(arg1), undot(arg2))
+    @pattern undot(opnode( op, arg1, arg2)) = opnode(op, undot(arg1), undot(arg2))
+    @pattern undot(n) = n
+
+    ==> undot(opnode(:.+, :x,:y)) = {:call, :+, :x, :y}
+        undot(opnode(:.*, :x,:y)) = {:call, :*, :x, :y}
+        undot(opnode(:.+, :x,opnode(:.*,:y,:z))) = {:call, :+, x, {:call, :*, :y, :z}}
+        undot(opnode(:-,  :x,opnode(:.*,:y,:z))) = {:call, :-, x, {:call, :*, :y, :z}}
 
 Fun fact:
 
-    @pattern f3(x,{1,x}) = 1
-    @pattern f3(x,x)     = 2
+    @pattern fn(x,{1,x}) = 1
+    @pattern fn(x,x)     = 2
 
 does not print an ambiguity warning, since there is no overlap between finite patterns. The infinitely nested sequence `x={1,{1,{1,...}}}` could be considered to match both, however.
