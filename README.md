@@ -31,11 +31,11 @@ prints
 
 Signatures can also contain patterns of tuples and vectors:
 
-    @pattern f2({x,y}) = 1
-    @pattern f2(x) = 2
+    @pattern f2({x,y}) = x*y
+    @pattern f2(x) = nothing
  
-    ==> f2({1,2}) = f2({"a",:x}) = 1
-        f2(1) = f2("hello") = f2({1}) = f2({1,2,3}) = 2
+    ==> f2({2,5}) = 10, f2({4,3}) = 12
+        f2(1) = f2("hello") = f2({1}) = f2({1,2,3}) = nothing
 
 Repeated arguments are allowed:
 

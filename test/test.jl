@@ -8,11 +8,11 @@ println("# Signatures can contain a mixture of variables and literals:")
 @show {f(x) for x=1:4}
 
 println("\n# Signatures can also contain patterns of tuples and vectors:") 
-@pattern f2({x,y}) = 1
-@pattern f2(x) = 2
+@pattern f2({x,y}) = x*y
+@pattern f2(x) = nothing
 
-@show f2({1,2})
-@show f2({"a",:x})
+@show f2({2,5})
+@show f2({4,3})
 println()
 @show f2(1)
 @show f2("hello")
