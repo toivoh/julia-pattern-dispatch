@@ -79,3 +79,28 @@ Fun fact:
     @pattern fn(x,x)     = 2
 
 does not print an ambiguity warning, since there is no overlap between finite patterns. The infinitely nested sequence `x={1,{1,{1,...}}}` could be considered to match both, however.
+
+Feaures
+-------
+* Generation of pattern matching code for individual patterns
+* Dispatches on most specific pattern
+* Warning when adding a pattern method causes dispatch ambiguity
+
+Planned/possible features
+----------------
+* Pattern matching on structs
+* User definable pattern matching on user defined types
+* To play well with type inference
+* Leverage method dispatch to reduce matching overhead
+* Generate merged matching code for multiple similar patterns
+* Varargs: matching on e g `(x, ys..., z)` and `{x, ys..., z}`
+
+Limitations
+-----------
+* Not yet as fast as it could be
+* Not yet terribly tested
+* No support for type parameters a la `f{T}(...)`
+
+
+
+
