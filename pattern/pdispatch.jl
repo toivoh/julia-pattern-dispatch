@@ -113,7 +113,7 @@ function dispatch(mt::PatternMethodTable, args::Tuple)
         matched, result = m.dispfun(args...)
         if matched;  return result;  end
     end
-    error("no dispatch found for pattern function $(m.fname)$args")
+    error("no dispatch found for pattern function $(mt.fname)$args")
 end
 
 

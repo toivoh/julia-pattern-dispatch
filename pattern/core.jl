@@ -128,6 +128,7 @@ isequal_atoms(x, y)          = false
 
 # provisional equivalence for atom types
 atom_eq(x::Number, y::Number) = (x == y)
+atom_eq(x::Array, y::Array) = isequal(x, y)  # consider: too loose?
 atom_eq(x, y) = is(x, y)
 
 # provisional atom definition

@@ -41,8 +41,14 @@ X, Xi = pvar(:X), pvar(:Xi, Int)
 show_code_pmatch(1)
 show_code_pmatch(X)
 show_code_pmatch(Xi)
+
+println()
+show_code_pmatch((X,))
 show_code_pmatch((1,X))
 show_code_pmatch((X,X))
+
+println()
+show_code_pmatch({X})
 show_code_pmatch({1,X})
 show_code_pmatch({X,X})
 

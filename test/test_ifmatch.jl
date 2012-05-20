@@ -29,6 +29,16 @@ end
 @ifmatch let {x,y,4}={2,3,4}
     @show x,y
 end
+@ifmatch let {x,x,4}={3,3,4}
+    @show x
+end
+@ifmatch let {{x},{x},7}={{4},{4},7}
+    @show x
+end
+@ifmatch let {x,x,7}={{4,5},{4,5},7}
+    @show x
+end
+
 
 # no-matches:
 @ifmatch let {x,y,3}=(6,5,3)
@@ -40,6 +50,10 @@ end
 @ifmatch let (x,y,3)=(6,5)
     @show x,y
 end
+@ifmatch let {{x},4}={{4,5},4}
+    @show x
+end
+
 
 println()
 @ifmatch let x::Int=3
