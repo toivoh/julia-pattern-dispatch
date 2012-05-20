@@ -2,16 +2,17 @@ julia-pattern-dispatch v0.0
 ===========================
 Toivo Henningsson
 
-This package is an attempt to support method dispatch in Julia based on pattern matching; this is a generalization of multiple dispatch.
+This package is an attempt to support method dispatch in Julia based on pattern matching. This is meant to be a generalization of Julia's multiple dispatch, though some of Julia's dispatch features are not implemented yet, e g varargs.
 
 Examples
 --------
 Pattern functions are defined using the `@pattern` macro.
 The most specific pattern that matches the given arguments is invoked.
+These examples are gathered in `test/test.jl`.
 
 Signatures can contain a mixture of variables and literals:
 
-    load("pdispatch.jl")
+    load("pattern/pdispatch.jl")
 
     @pattern f(x) =  x
     @pattern f(2) = 42
@@ -24,11 +25,11 @@ prints
 
 Signatures can also contain patterns of tuples and vectors:
 
-    @pattern g({x,y}) = 1
-    @pattern g(x) = 2
+    @pattern f2({x,y}) = 1
+    @pattern f2(x) = 2
  
-    ==> g({1,2}) = g({"a",:x}) = 1
-        g(1) = g("hello") = g({1}) = g({1,2,3}) = 2
+    ==> f2({1,2}) = f2({"a",:x}) = 1
+        f2(1) = f2("hello") = f2({1}) = f2({1,2,3}) = 2
 
 Repeated arguments are allowed:
 
@@ -40,8 +41,8 @@ Repeated arguments are allowed:
 
 A warning is printed if a new definition makes dispatch ambiguous:
     
-    @pattern h((x,y),z) = 2
-    @pattern h(x,(1,z)) = 3
+    @pattern ambiguous((x,y),z) = 2
+    @pattern ambiguous(x,(1,z)) = 3
 
 prints
 
@@ -51,7 +52,7 @@ prints
 
 Fun fact:
 
-    @pattern ff(x,{1,x}) = 1
-    @pattern ff(x,x)     = 2
+    @pattern f3(x,{1,x}) = 1
+    @pattern f3(x,x)     = 2
 
 does not print an ambiguity warning, since there is no overlap between finite patterns. The infinitely nested sequence `x={1,{1,{1,...}}}` could be considered to match both, however.
