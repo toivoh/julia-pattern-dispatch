@@ -95,13 +95,14 @@ Feaures
 
 Aim
 ---
-* Provide a superset of Julia's multiple dispatch, based on pattern matching
+* Provide a powerful and intuitive dispatch mechanism based on pattern matching
+* Support a superset of Julia's multiple dispatch
 * Generate fast matching code for a given collection of pattern method signatures
 * Allow Julia's optimizations such as type inference to work with pattern dispatch
 
 Planned/possible features
 ----------------
-* Pattern matching on structs
+* Pattern matching on struct-like types
 * User definable pattern matching on user defined types
 * Play well with type inference
 * Leverage method dispatch to reduce matching overhead
