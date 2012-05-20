@@ -1,7 +1,6 @@
 
-load("utils/req.jl")
-load("pdispatch.jl")
-req("prettyshow/prettyshow.jl")
+
+load("pattern/pdispatch.jl")
 
 mtable = PatternMethodTable(:f)
 add(mtable, (@patmethod f(1) = 42))
@@ -24,7 +23,27 @@ println()
 @show ff(2)
 @show ff(3)
 
+@pattern f2({x,y}) = 1
+@pattern f2(x) = 2
 
+println()
+@show f2(1)
+@show f2({1})
+@show f2({1,2})
+@show f2((1,2))
+@show f2({1,2,3})
+
+@pattern f3((x,y)) = 1
+@pattern f3(x) = 2
+
+println()
+@show f3(1)
+@show f3((1))
+@show f3((1,2))
+@show f3({1,2})
+@show f3((1,2,3))
+
+println()
 println("(g=1;@pattern g(x)=1) throws: ", @assert_fails begin
     g = 1
     @pattern g(x)=1

@@ -41,7 +41,7 @@ show_unpatterned(io::IO,p::ArrayPat{1})= show_unpatterned_list(io,"{",p.ps,"}")
 
 function show_unpatterned_list(io::IO, open::String, ps, close::String)
     print(io,open)
-    n = length(p.ps)
+    n = length(ps)
     for k=1:n
         show_unpatterned(io, ps[k])
         print(io, ",")
