@@ -100,7 +100,6 @@ function show(io::IO, p::PVar)
     end
 end
 
-
 ## restrict the domain of a pattern
 restrict( ::NonePattern, ::Domain) = nonematch
 restrict(p::PVar, dom::Domain) = pvar(p.var, p.dom & dom)

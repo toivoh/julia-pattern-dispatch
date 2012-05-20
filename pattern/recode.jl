@@ -49,9 +49,15 @@ function recode_pattern_ex(c::RPContext, ex::Expr)
     head, args = ex.head, ex.args
     nargs = length(args)
     if head == doublecolon
-        @expect nargs==2
-        arg = recode_pattern_ex(c, args[1])
-        return :( restrict(($arg), ($args[2])) )
+        @expect 1<=nargs<=2
+        if nargs == 1
+            var = quotevalue(pvar(gensym()))
+            dom = args[1]
+        else           
+            var = recode_pattern_ex(c, args[1])
+            dom = args[2]
+        end
+        return :( restrict(($var), ($dom)) )
     elseif contains([:call, :ref, :curly], head)
         if (head==:call) && (args[1]==:staticvalue)
             @expect nargs==2

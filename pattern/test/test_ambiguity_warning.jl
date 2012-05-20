@@ -50,3 +50,6 @@ load("pattern/pdispatch.jl")
 
 @pattern f6(x,y,1,x,y) = 2
 @pattern f6(x,y,x,y,1) = 3
+
+@pattern f7(::Int,::Any) = 2
+@pattern f7(x,::Int) = 3
