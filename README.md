@@ -12,8 +12,10 @@ Examples
 --------
 These examples are gathered in `test/test.jl`.
 
-Pattern functions are defined using the `@pattern` macro.
-The most specific pattern that matches the given arguments is invoked.
+Pattern methods are defined using the `@pattern` macro.
+The method with the most specific pattern that matches the given arguments
+is invoked, with variable values needed to match assigned to the corresponding variables.
+
 Signatures can contain a mixture of variables and literals:
 
     load("pattern/pdispatch.jl")
@@ -42,6 +44,9 @@ Repeated arguments are allowed:
 
     ==> eq(1,1) = true
         eq(1,2) = false
+
+Pattern variables can of course also be qualified by type,
+e g `@pattern f((x::Int,y::Float))` matches only on `(Int,Float)` tuples.
 
 Symbols in signatures are replaced by pattern variables by default (symbols in the position of function names and at the right hand side of `::` are not).
 To use a preexisting value as a literal, use `staticvalue()`, which evaluates an expression at the point of definition:
@@ -83,6 +88,28 @@ Fun fact:
     @pattern fn(x,x)     = 2
 
 does not print an ambiguity warning, since there is no overlap between finite patterns. The infinitely nested sequence `x={1,{1,{1,...}}}` could be considered to match both, however.
+
+There is also an inline syntax for to match a single pattern:
+
+    load("pattern/ifmatch.jl")
+
+    println("\n# @ifmatch let syntax:")
+    for k=1:4
+        print("k = $k: ")
+        m::Bool = @ifmatch let {x,2}={k,k}
+            println("x = $x")
+        end
+        if !m
+            println("no match")
+        end
+    end
+
+prints
+
+    k = 1: no match
+    k = 2: x = 2
+    k = 3: no match
+    k = 4: no match
 
 Feaures
 -------
