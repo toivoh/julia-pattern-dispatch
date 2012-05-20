@@ -94,10 +94,13 @@ function add(mt::PatternMethodTable, m::PatternMethod)
         if !(is(lb,nonematch) || any({pattern_eq(lb,mk.pattern) for mk in ms}))
             # todo: 
             #   o disambiguate pvars in lb (might have same name)
-            #   o print x::Int instead of pvar(x,Int)?    
-            println("Warning: New @pattern method ", mt.fname, m.pattern)
-            println("         is ambiguous with   ", mt.fname, m0.pattern)
-            println("         Make sure ", mt.fname, lb, " is defined first")
+            print("Warning: New @pattern method ", mt.fname)
+            show_unpatterned(m.pattern); println()
+            print("         is ambiguous with   ", mt.fname)
+            show_unpatterned(m0.pattern); println()
+            print("         Make sure           ", mt.fname) 
+            show_unpatterned(lb)
+            println(" is defined first.")
         end
     end
 

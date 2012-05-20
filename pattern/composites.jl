@@ -11,6 +11,18 @@ type TuplePat <: Composite{Tuple}
 end
 
 show(io::IO, p::TuplePat) = print(io, "TuplePat$(p.ps)")
+function show_unpatterned(io::IO, p::TuplePat)
+#    show(io, p.ps)
+    print("(")
+    n = length(p.ps)
+    for k=1:n
+        show_unpatterned(io, p.ps[k])
+        print(io, ",")
+        if k<n; print(io, " "); end
+    end
+    print(")")
+end
+
 
 #isequal(x::TuplePat, y::TuplePat) = allp(isequal, x.ps,y.ps)
 function isequal(xs::TuplePat, ys::TuplePat) 

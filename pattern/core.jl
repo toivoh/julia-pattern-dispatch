@@ -65,6 +65,18 @@ const nonematch = NonePattern()
 
 show(io::IO, ::NonePattern) = print(io, "nonematch")
 
+show_unpatterned(x) = show_unpatterned(OUTPUT_STREAM, x)
+show_unpatterned(io::IO, x) = show(io, x)
+show_unpatterned(io::IO, dom::TypeDomain) = print(io, domtype(dom))
+function show_unpatterned(io::IO, p::PVar)
+    print(io, p.var.name)
+    if !is(p.dom,universe)
+        print(io, "::")
+        show_unpatterned(io, p.dom)
+    end
+end
+show_unpatterned(io::IO, p::Atom) = show(io, p.value)
+
 isequal(x::Pattern, y::Pattern) = is(x,y)
 isequal(x::PVar, y::PVar) = is(x.var, y.var) && isequal(x.dom, y.dom)
 isequal(x::Atom, y::Atom) = isequal_atoms(x.value, y.value)
