@@ -89,7 +89,7 @@ Fun fact:
 
 does not print an ambiguity warning, since there is no overlap between finite patterns. The infinitely nested sequence `x={1,{1,{1,...}}}` could be considered to match both, however.
 
-There is also an inline syntax for to match a single pattern:
+There is also an inline syntax to match a single pattern:
 
     load("pattern/ifmatch.jl")
 
@@ -110,6 +110,9 @@ prints
     k = 2: x = 2
     k = 3: no match
     k = 4: no match
+
+The `@ifmatch let` block is executed only if the pattern in the left hand side of `=` matches the value in the right hand side.
+The value of the `@ifmatch let` block is `true` if the pattern matched and false otherwise.
 
 Feaures
 -------
