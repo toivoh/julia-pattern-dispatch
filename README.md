@@ -4,6 +4,10 @@ Toivo Henningsson
 
 This package is an attempt to support method dispatch in Julia based on pattern matching. This is meant to be a generalization of Julia's multiple dispatch; though some of Julia's dispatch features are not implemented yet, e g varargs.
 
+Installation
+------------
+Download the source and copy the `pattern/` subdirectory into your source files' directory.
+
 Examples
 --------
 These examples are gathered in `test/test.jl`.
@@ -82,15 +86,18 @@ does not print an ambiguity warning, since there is no overlap between finite pa
 
 Feaures
 -------
+* Patterns can consist of values, variables, tuples, and arrays
+* Variables can be qualified by type
+* Repeated variables allowed in patterns
 * Generation of pattern matching code for individual patterns
 * Dispatches on most specific pattern
-* Warning when adding a pattern method causes dispatch ambiguity
+* Warning when addition of a pattern method causes dispatch ambiguity
 
 Planned/possible features
 ----------------
 * Pattern matching on structs
 * User definable pattern matching on user defined types
-* To play well with type inference
+* Play well with type inference
 * Leverage method dispatch to reduce matching overhead
 * Generate merged matching code for multiple similar patterns
 * Varargs: matching on e g `(x, ys..., z)` and `{x, ys..., z}`
