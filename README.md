@@ -152,4 +152,4 @@ Matching model
 * A pattern matches a set of values; but only one value for a given assignment of its variables.
 * Patterns, especially variables, can be constrained by _domains_: sets of values. (E g all values of a given type)
 * Domains for composites should be separable: they should be possible to express as a condition on the characteristics
-* of the container itself combined with independent conditions on its elements.
+of the container itself combined with independent conditions on its elements.
