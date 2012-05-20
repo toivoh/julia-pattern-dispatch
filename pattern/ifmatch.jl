@@ -1,10 +1,6 @@
 
 load("pattern/req.jl")
-req("pattern/utils.jl")
-req("pattern/composites.jl")
-req("pattern/recode.jl")
-req("pattern/pmatch.jl")
-
+req("pattern/pattern.jl")
 
 macro ifmatch(ex)
     code_ifmatch_let(ex)
