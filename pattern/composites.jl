@@ -5,6 +5,14 @@ req("pattern/core.jl")
 req("pattern/pmatch.jl")
 
 
+function map_array(T, f::Function, a::Array)
+    dest = similar(a, T)
+    for k=1:length(a)
+        dest[k] = f(a[k])
+    end
+    dest
+end
+
 type TuplePat <: Composite{Tuple}
     ps::Tuple
     TuplePat(args...) = new(map(aspattern, args))
@@ -14,13 +22,14 @@ typealias NTArray{N,T} Array{T,N}
 type ArrayPat{N} <: Composite{NTArray{N}}
     ps::NTArray{N}
 #    ArrayPat(ps::NTArray{N}) = new(map(aspattern, ps))
-    function ArrayPat(ps::NTArray{N})
-        pps = similar(ps, Any)
-        for k=1:length(ps)
-            pps[k] = aspattern(ps[k])
-        end
-        new(pps)
-    end
+    ArrayPat(ps::NTArray{N}) = new(map_array(Any, aspattern, ps))
+#     function ArrayPat(ps::NTArray{N})
+#         pps = similar(ps, Any)
+#         for k=1:length(ps)
+#             pps[k] = aspattern(ps[k])
+#         end
+#         new(pps)
+#     end
 end
 ArrayPat{N}(ps::NTArray{N}) = ArrayPat{N}(ps)
 
@@ -65,7 +74,7 @@ function aspattern{N}(a::NTArray{N})
     return p
 end
 
-
+# todo: eliminate redundancy below:
 function code_pmatch(c::PMContext, p::TuplePat,xname::Symbol)
     np = length(p.ps)
     emit(c, code_iffalse_ret(c,  :(
@@ -77,8 +86,20 @@ function code_pmatch(c::PMContext, p::TuplePat,xname::Symbol)
         code_pmatch(c, p.ps[k], xname_k)
     end
 end
+function code_pmatch(c::PMContext, p::ArrayPat,xname::Symbol)
+    np = length(p.ps)
+    emit(c, code_iffalse_ret(c,  :(
+        (isa(($xname),Array) && size($xname) == ($size(p.ps)))
+    )))
+    for k=1:np
+        xname_k = gensym()
+        emit(c, :(($xname_k) = ($xname)[$k]))
+        code_pmatch(c, p.ps[k], xname_k)
+    end
+end
 
 _ref(s::Subs, p::TuplePat) = aspattern(map(p->s[p], p.ps))
+_ref(s::Subs, p::ArrayPat) = aspattern(map_array(Any, p->s[p], p.ps))
 
 function unite(s::Subs, p::TuplePat,x::TuplePat)
     np, nx = length(p.ps), length(x.ps)
@@ -90,4 +111,14 @@ function unite(s::Subs, p::TuplePat,x::TuplePat)
         ys[k] = y
     end
     aspattern(tuple(ys...))
+end
+function unite{N}(s::Subs, p::ArrayPat{N},x::ArrayPat{N})
+    if size(p.ps)!=size(x.ps); return unite(s, nonematch); end
+    ys = similar(x.ps, Any)
+    for k=1:length(x.ps)
+        y = unite(s, p.ps[k], x.ps[k])
+        if is(y, nonematch); return nonematch; end
+        ys[k] = y
+    end
+    aspattern(ys)
 end

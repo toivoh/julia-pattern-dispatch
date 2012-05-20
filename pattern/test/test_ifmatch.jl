@@ -26,14 +26,14 @@ println()
 @ifmatch let (x,y,3)=(1,2,3)
     @show x,y
 end
-# @ifmatch let {x,y,4}={2,3,4}
-#     @show x,y
-# end
+@ifmatch let {x,y,4}={2,3,4}
+    @show x,y
+end
 
-# # no-matches:
-# @ifmatch let {x,y,3}=(6,5,3)
-#     @show x,y
-# end
+# no-matches:
+@ifmatch let {x,y,3}=(6,5,3)
+    @show x,y
+end
 @ifmatch let (x,y,3)=(6,5,4)
     @show x,y
 end

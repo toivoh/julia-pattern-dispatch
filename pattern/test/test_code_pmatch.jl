@@ -43,5 +43,7 @@ show_code_pmatch(X)
 show_code_pmatch(Xi)
 show_code_pmatch((1,X))
 show_code_pmatch((X,X))
+show_code_pmatch({1,X})
+show_code_pmatch({X,X})
 
 
