@@ -93,6 +93,12 @@ Feaures
 * Dispatches on most specific pattern
 * Warning when addition of a pattern method causes dispatch ambiguity
 
+Aim
+---
+* Provide a superset of Julia's multiple dispatch, based on pattern matching
+* Generate fast matching code for a given collection of pattern method signatures
+* Allow Julia's optimizations such as type inference to work with pattern dispatch
+
 Planned/possible features
 ----------------
 * Pattern matching on structs
@@ -107,7 +113,3 @@ Limitations
 * Not yet as fast as it could be
 * Not yet terribly tested
 * No support for type parameters a la `f{T}(...)`
-
-
-
-
