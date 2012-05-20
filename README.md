@@ -93,7 +93,6 @@ There is also an inline syntax to match a single pattern:
 
     load("pattern/ifmatch.jl")
 
-    println("\n# @ifmatch let syntax:")
     for k=1:4
         print("k = $k: ")
         m::Bool = @ifmatch let {x,2}={k,k}
@@ -112,7 +111,7 @@ prints
     k = 4: no match
 
 The `@ifmatch let` block is executed only if the pattern in the left hand side of `=` matches the value in the right hand side.
-The value of the `@ifmatch let` block is `true` if the pattern matched and false otherwise.
+The value of `@ifmatch let` is `true` if the pattern matches, and false otherwise.
 
 Feaures
 -------
