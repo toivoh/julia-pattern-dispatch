@@ -153,4 +153,3 @@ Matching model
 * Patterns, especially variables, can be constrained by _domains_: sets of values. (E g all values of a given type)
 * Domains for composites should be separable: they should be possible to express as a condition on the characteristics
 * of the container itself combined with independent conditions on its elements.
-* 
