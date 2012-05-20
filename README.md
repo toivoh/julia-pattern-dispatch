@@ -150,6 +150,6 @@ Matching model
 * A pattern can be built from variables, composites (tuples, arrays, structs,...) and atoms (simple values).
 * A value can be built from composites and atoms.
 * A pattern matches a set of values; but only one value for a given assignment of its variables.
-* Patterns, especially variables, can be constrained by _domains_: sets of values. (E g all values of a given type)
+* Patterns, especially variables, can be constrained by _domains_: sets of values. (e g all values of a given type)
 * Domains for composites should be separable: they should be possible to express as a condition on the characteristics
-of the container itself combined with independent conditions on its elements.
+of the container itself, combined with independent conditions on its elements.
