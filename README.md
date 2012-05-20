@@ -2,7 +2,7 @@ julia-pattern-dispatch v0.0
 ===========================
 Toivo Henningsson
 
-This package is an attempt to support method dispatch in Julia based on pattern matching. This is meant to be a generalization of Julia's multiple dispatch; though some of Julia's dispatch features are not implemented yet, e g varargs.
+This package is an attempt to support method dispatch in Julia based on pattern matching.
 
 Installation
 ------------
