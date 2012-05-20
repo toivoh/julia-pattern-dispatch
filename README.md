@@ -108,6 +108,7 @@ Planned/possible features
 * Leverage method dispatch to reduce matching overhead
 * Generate merged matching code for multiple similar patterns
 * Varargs: matching on e g `(x, ys..., z)` and `{x, ys..., z}`
+* Allow to qualify variables by domains other than type, e g all values that compare equal to 2, perhaps ranges, ...
 
 Limitations
 -----------
