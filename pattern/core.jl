@@ -135,4 +135,5 @@ atom_eq(x, y) = is(x, y)
 isatom(::Number) = true
 isatom(::String) = true
 isatom(::Symbol) = true
+isatom(::Nothing) = true
 isatom(::Any) = false

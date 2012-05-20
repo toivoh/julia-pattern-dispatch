@@ -27,6 +27,17 @@ println()
 @show eq(1,1)
 @show eq(1,2)
 
+# staticvalue(ex) evaluates an expression at the point of definition
+println()
+@pattern f3(staticvalue(nothing)) = 1
+@pattern f3(x) = 2
+
+@show f3(nothing)
+@show f3(1)
+@show f3(:x)
+@show f3("hello")
+
+
 # A warning is printed if a new definition makes dispatch ambiguous:
 println()
 @pattern ambiguous((x,y),z) = 2

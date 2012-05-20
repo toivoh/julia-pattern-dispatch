@@ -39,6 +39,15 @@ Repeated arguments are allowed:
     ==> eq(1,1) = true
         eq(1,2) = false
 
+Symbols in signatures are replaced by pattern variables by default (symbols in the position of function names and at the right hand side of `::` are not).
+To use a preexisting value as a literal, use `staticvalue()`, which evaluates an expression at the point of definition:
+
+    @pattern f3(staticvalue(nothing)) = 1
+    @pattern f3(x) = 2
+
+    ==> f3(nothing) = 1
+        f3(1) = f3(:x) = f3("hello") = 2
+
 A warning is printed if a new definition makes dispatch ambiguous:
     
     @pattern ambiguous((x,y),z) = 2
