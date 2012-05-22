@@ -3,14 +3,22 @@ load("pattern/req.jl")
 req("pattern/utils.jl")
 
 
-# -- Domains ------------------------------------------------------------------
+# -- Domains: restrictions on the possible values of a pattern ----------------
 
-abstract Domain  ## A set of values 
-type TypeDomain{T} <: Domain; end  ## The domain of values x such that x::T
+## Domain: supertype of all domains ##
+abstract Domain
 
+<=(x::Domain, y::Domain) = error("Unimplemented: <=(($typeof(x),($typeof(y))")
+<( x::Domain, y::Domain) = (x <= y) && !(y <= x)
+>=(x::Domain, y::Domain) = y <= x
+>( x::Domain, y::Domain) = y <  x
+
+## TypeDomain: The domain of values x such that x::T ##
+type TypeDomain{T} <: Domain; end  
 domain{T}(::Type{T}) = TypeDomain{T}()
 domain(T::Tuple)     = TypeDomain{T}()
 
+## Largest and smallest domains ##
 typealias Universe   TypeDomain{Any}
 typealias NoneDomain TypeDomain{None}
 const universe   = Universe()
@@ -21,9 +29,6 @@ has(d::TypeDomain, x) = isa(x, domtype(d))
 (&){S,T}(::TypeDomain{S}, ::TypeDomain{T})=domain(tintersect(S,T))
 
 <={S,T}(x::TypeDomain{S},y::TypeDomain{T}) = S <: T
-<( x::TypeDomain, y::TypeDomain) = (x <= y) && !(y <= x)
->=(x::TypeDomain, y::TypeDomain) = y <= x
->( x::TypeDomain, y::TypeDomain) = y <  x
 
 show(io::IO, d::TypeDomain) = print(io, "domain(",domtype(d),")")
 code_contains(::Universe,::Symbol) = :true
