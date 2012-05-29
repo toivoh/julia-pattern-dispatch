@@ -1,5 +1,74 @@
 # Ideas for guard condition syntax:
 
+[x where>2]
+(x ~where>2)
+
+[x where x>2]
+(x~where~x>2)
+(x ~where~ x>2)
+
+[x where x>2]
+(x ~where[x>2])
+
+
+f([where==2]::Real)   = 42
+f([ ::Real where==2]) = 42
+
+f(==(2)::Real)         = 42
+f([x::Real where >2]) =  x
+f([x::Real where <2]) = -x
+
+f([ ::Real where==2 ]) = 42
+
+f(==(2)::Real)         = 42
+f([x::Real where x>2]) =  x
+f([x::Real where x<2]) = -x
+
+f(==(2)::Real)          = 42
+f([x::Real; where x>2]) =  x
+f([x::Real; where x<2]) = -x
+
+
+f(==(2)::Real)         = 42
+f(x::Real ~where~ x>2) =  x
+f(x::Real ~where~ x<2) = -x
+
+f(==(2)::Real)         = 42
+f((~where==2)::Real)   = 42
+f(~where::Real==2)     = 42
+f( ::Real ~where==2)   = 42
+
+f(==(2)::Real)         = 42
+f(x::Real ~where[x>2]) =  x
+f(x::Real ~where[x<2]) = -x
+
+f(==(2)::Real)  = 42
+f(x::Real ~x>2) =  x
+f(x::Real ~x<2) = -x
+
+f(==(2)::Real)    = 42
+f(x::Real ~[x>2]) =  x
+f(x::Real ~[x<2]) = -x
+
+
+f(==(2)::Real)      = 42
+f(x::Real ~where>2) =  x
+f(x::Real ~where<2) = -x
+
+
+
+(x~(@where x > 2))
+(x~(@where > 2))
+[x where x>2]
+[x where >2]
+
+x~[where >2]
+(x ~where > 2)
+(x ~where~ x > 2)
+
+(x: where(x>2))
+(x: where > 2)
+
 [x where x > 0]
 
 f([ ::Real where  == 0]) = 42
