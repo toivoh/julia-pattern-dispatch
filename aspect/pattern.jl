@@ -1,9 +1,23 @@
 
 abstract Pattern
-abstract Label
 abstract Aspect{T<:Pattern}
 
-## Labels ##
+type AspectKey{T<:Pattern}
+    name::Symbol
+    aspect::Aspect{T}
+    deps::Vector{AspectKey}
+
+    function AspectKey(name::Symbol, aspect::Aspect{T}, deps)
+        new(name, aspect, AspectKey[deps...])
+    end
+end
+AspectKey{T}(name, aspect::Aspect{T}, deps) = AspectKey{T}(name, aspect, deps)
+
+
+# -- Labels -------------------------------------------------------------------
+
+## Label for an ObjectPattern ##
+abstract Label
 
 type Var <: Label
     name::Symbol
@@ -13,36 +27,48 @@ type Atom{T} <: Label
 end
 
 
-## Patterns ##
+# -- Patterns -----------------------------------------------------------------
 
+# typeassert(x, T)
 type TypePattern <: Pattern
     T
 end
 
 type AspectEntry{T<:Pattern}
-    key::Aspect{T}
+    key::AspectKey{T}
     p::T
 end
-
+# Label and collected (AspectKey, Pattern) pairs
 type ObjectPattern <: Pattern
     label::Label
     factors::Vector{AspectEntry}
 end
 
-type AssocPattern{K}
+# Collected (index, Pattern) pairs for index properties
+type IndexPattern{K} <: Pattern
     factors::Dict{K,ObjectPattern}
 end
 
 
-## Aspects ##
+# -- Aspects ------------------------------------------------------------------
 
 type TypeAspect <: Aspect{TypePattern}; end
 
 abstract Property{T<:Pattern} <: Aspect{T}
-abstract   AssocProperty{K} <: Property{AssocPattern{K}}
+abstract   IndexProperty{K} <: Property{IndexPattern{K}}
 
-type FuncProperty   <: AssocProperty{Function}; end
-type IndexProperty  <: AssocProperty{Tuple};    end
-type FieldsProperty <: AssocProperty{Symbol};   end
-type ApplyProperty  <: AssocProperty{Tuple};    end
+type FuncProperty   <: IndexProperty{Function}; end
+type FieldProperty  <: IndexProperty{Symbol};   end
+type ApplyProperty  <: IndexProperty{Tuple};    end
+type RefProperty    <: IndexProperty{Tuple};    end
 
+
+# -- Aspect DAG ---------------------------------------------------------------
+
+type_asp  = AspectKey(:typeassert, TypeAspect(),    {})
+
+func_asp  = AspectKey(:func,       FuncProperty(),  {type_asp})
+field_asp = AspectKey(:getfield,   FieldProperty(), {type_asp})
+apply_asp = AspectKey(:apply,      ApplyProperty(), {type_asp})
+
+ref_asp   = AspectKey(:ref,        RefProperty(),   {type_asp, func_asp})
