@@ -25,7 +25,10 @@ end
 
 pprintln(args...) = pprint(args..., '\n')
 pprint(args...) = pprint(default_pretty(), args...)
+
 pshow(args...)  = pshow(default_pretty(), args...)
+pshow(io::IO, args...)  = pshow(default_pretty(io), args...)
+
 
 # fallback for io::IO
 pprint(io::IO, args...) = print(io, args...) 
@@ -105,7 +108,8 @@ function pprint(io::PrettyRoot, c::Char)
     return false
 end
 
-default_pretty() = PrettyRoot(OUTPUT_STREAM, 80)
+default_pretty() = default_pretty(OUTPUT_STREAM)
+default_pretty(io::IO) = PrettyRoot(io, 80)
 
 
 # -- PrettyChild --------------------------------------------------------------
