@@ -1,17 +1,26 @@
 
-abstract Pattern
-abstract Aspect{T<:Pattern}
+macro expect(pred)
+    quote
+        ($pred) ? nothing : error("expected: ", ($string(pred))", == true")
+    end
+end
 
-type AspectKey{T<:Pattern}
+
+
+abstract Pattern
+
+abstract Aspect{T<:Pattern}
+pattype{T}(::Aspect{T}) = T
+
+type AspectKey
     name::Symbol
-    aspect::Aspect{T}
+    aspect::Aspect
     deps::Vector{AspectKey}
 
-    function AspectKey(name::Symbol, aspect::Aspect{T}, deps)
+    function AspectKey(name::Symbol, aspect::Aspect, deps)
         new(name, aspect, AspectKey[deps...])
     end
 end
-AspectKey{T}(name, aspect::Aspect{T}, deps) = AspectKey{T}(name, aspect, deps)
 
 
 # -- Labels -------------------------------------------------------------------
@@ -34,14 +43,20 @@ type TypePattern <: Pattern
     T
 end
 
-type AspectEntry{T<:Pattern}
-    key::AspectKey{T}
-    p::T
+type AspectPattern <: Pattern
+    key::AspectKey
+    p::Pattern
+
+    function AspectPattern(key::AspectKey, p::Pattern) 
+        @expect isa(p, pattype(asp))
+        new(key, p)
+    end
 end
+
 # Label and collected (AspectKey, Pattern) pairs
 type ObjectPattern <: Pattern
     label::Label
-    factors::Vector{AspectEntry}
+    factors::Vector{AspectPattern}
 end
 
 # Collected (index, Pattern) pairs for index properties
@@ -54,13 +69,13 @@ end
 
 type TypeAspect <: Aspect{TypePattern}; end
 
-abstract Property{T<:Pattern} <: Aspect{T}
+abstract Property{T} <: Aspect{T}
 abstract   IndexProperty{K} <: Property{IndexPattern{K}}
 
-type FuncProperty   <: IndexProperty{Function}; end
-type FieldProperty  <: IndexProperty{Symbol};   end
-type ApplyProperty  <: IndexProperty{Tuple};    end
-type RefProperty    <: IndexProperty{Tuple};    end
+type FuncProperty  <: IndexProperty{Function}; end
+type FieldProperty <: IndexProperty{Symbol};   end
+type ApplyProperty <: IndexProperty{Tuple};    end
+type RefProperty   <: IndexProperty{Tuple};    end
 
 
 # -- Aspect DAG ---------------------------------------------------------------
