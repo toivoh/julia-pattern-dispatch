@@ -1,4 +1,8 @@
 
+load("pattern/req.jl")
+load("pretty/pretty.jl")
+
+
 macro expect(pred)
     quote
         ($pred) ? nothing : error("expected: ", ($string(pred))", == true")
@@ -45,12 +49,18 @@ type AspectPattern <: Pattern
 end
 code_match(c, p::AspectPattern,ex) = code_match(c, p.p,code_get(c,p.key, ex))
 
+function show(io::IO, p::AspectPattern)
+    pprint(io, "AspectPattern(", indent(p.key.name, ", ", p.p), ")")
+end
+
+
 ## Label for an ObjectPattern ##
 abstract Label
 
 type Var <: Label
     name::Symbol
 end
+show(io::IO, var::Var) = print(io, "Var(:", var.name, ")")
 type Atom{T} <: Label
     value::T
 end
@@ -67,6 +77,19 @@ function code_match(c, po::ObjectPattern,ex)
     symbol = emit_bind(c, po.label,ex)
     for p in po.factors;  code_match(c, p,symbol);  end
 end
+
+function show(io::IO, p::ObjectPattern) 
+    pprint(io, "ObjectPattern(", 
+           indent(
+               p.label, ", [", #indent(
+                   delim_list(p.factors, '\n', ','),
+               #), 
+               "]"
+#               PNest(io->showall(io, p.factors))
+           ), 
+       ")")
+end
+
 
 # Collected (index, Pattern) pairs for index properties
 type IndexPattern{K} <: Pattern
@@ -113,13 +136,13 @@ code_get(c, x::PropObj{ApplyProperty}, key::Tuple)    = :( ($x.ex)($key...) )
 
 # -- Aspect DAG ---------------------------------------------------------------
 
-type_asp  = AspectKey(:typeassert, TypeAspect(),    {})
+type_asp  = AspectKey(:type_asp,  TypeAspect(),    {})
 
-func_asp  = AspectKey(:func,       FuncProperty(),  {type_asp})
-field_asp = AspectKey(:getfield,   FieldProperty(), {type_asp})
-apply_asp = AspectKey(:apply,      ApplyProperty(), {type_asp})
+func_asp  = AspectKey(:func_asp,  FuncProperty(),  {type_asp})
+field_asp = AspectKey(:field_asp, FieldProperty(), {type_asp})
+apply_asp = AspectKey(:apply_asp, ApplyProperty(), {type_asp})
 
-ref_asp   = AspectKey(:ref,        RefProperty(),   {type_asp, func_asp})
+ref_asp   = AspectKey(:ref_asp,   RefProperty(),   {type_asp, func_asp})
 
 
 

@@ -3,8 +3,8 @@ load("pattern/req.jl")
 load("aspect/pattern.jl")
 
 req("pattern/utils.jl")
-req("prettyshow/prettyshow.jl")
-show(io::IO, ex::Expr) = pshow(io, ex)
+#req("prettyshow/prettyshow.jl")
+#show(io::IO, ex::Expr) = pshow(io, ex)
 
 function code(p::Pattern)
     c=CMContext()
