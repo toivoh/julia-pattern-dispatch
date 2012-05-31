@@ -60,21 +60,30 @@ type ObjectPattern <: Pattern
     label::Label
     factors::Vector{AspectPattern} # assumed topsorted by aspect key
 end
+# todo: topsort factors!
+ObjectPattern(label::Label, ps) = ObjectPattern(label, AspectPattern[ps...])
+
 function code_match(c, po::ObjectPattern,ex)
-    emit_bind(c, po.label,ex)
-    for p in po.factors;  code_match(c, p,ex);  end
+    symbol = emit_bind(c, po.label,ex)
+    for p in po.factors;  code_match(c, p,symbol);  end
 end
 
 # Collected (index, Pattern) pairs for index properties
 type IndexPattern{K} <: Pattern
     factors::Dict{K,ObjectPattern}
 end
+#IndexPattern{K}(factors::Dict{K,ObjectPattern}) = IndexPattern{K}(factors)
+
 function code_match(c, ps::IndexPattern,prop)
     for (key, p) in ps.factors;  code_match(c, p,code_get(c,prop, key));  end
 end
 
 
 # -- Aspects ------------------------------------------------------------------
+
+
+code_get(c,key::AspectKey, ex) = code_get(c,key.aspect, ex)
+
 
 type TypeAspect <: Aspect{TypePattern}; end
 code_get(c,::TypeAspect, ex) = ex
@@ -96,7 +105,7 @@ type FieldProperty <: IndexProperty{Symbol};   end
 type RefProperty   <: IndexProperty{Tuple};    end
 type ApplyProperty <: IndexProperty{Tuple};    end
 
-code_get(c, x::PropObj{FuncProperty},  key::Function) = :( ($key)($x.ex)    )
+code_get(c, x::PropObj{FuncProperty},  key::Function) = :( ($quot(key))($x.ex))
 code_get(c, x::PropObj{FieldProperty}, key::Symbol)   = :( ($x.ex).($key)   )
 code_get(c, x::PropObj{RefProperty},   key::Tuple)    = :( ($x.ex)[$key...] )
 code_get(c, x::PropObj{ApplyProperty}, key::Tuple)    = :( ($x.ex)($key...) )
@@ -111,3 +120,43 @@ field_asp = AspectKey(:getfield,   FieldProperty(), {type_asp})
 apply_asp = AspectKey(:apply,      ApplyProperty(), {type_asp})
 
 ref_asp   = AspectKey(:ref,        RefProperty(),   {type_asp, func_asp})
+
+
+
+# -- Matching code generation -------------------------------------------------
+
+type CMContext
+    assigned_vars::Set{Var}
+    code::Vector
+    CMContext() = new(Set{Var}(), {})
+end
+
+emit(c::CMContext, ex) = push(c.code, ex)
+
+function emit_pred(c::CMContext, pred_ex) 
+    emit(c, :( 
+        if !($pred_ex) 
+            return false
+        end 
+    ))
+end
+
+function emit_egal_pred(c::CMContext, ex1, ex2)
+    emit_pred(c, :( is_egal(($ex1), ($ex2)) ))
+    ex1
+end
+
+# return symbol to which ex is assigned
+emit_bind(c::CMContext, a::Atom, ex) = emit_egal_pred(c, quot(a.value), ex)
+function emit_bind(c::CMContext, var::Var, ex)
+    name = var.name
+    if has(c.assigned_vars, var)
+        emit_egal_pred(c, name, ex)
+    else
+        emit(c, :(
+            ($name) = ($ex)
+        ))
+        add(c.assigned_vars, var)
+    end
+    name
+end
