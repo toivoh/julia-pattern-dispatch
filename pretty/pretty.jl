@@ -46,24 +46,28 @@ type PrettyTerm <: PrettyIO
     sink::IO
     width::Int
     xpos::Int
+    fresh_line::Bool
 
     function PrettyTerm(sink::IO, width::Int)
         @expect width > 0
-        new(sink, width, 0)
+        new(sink, width, 0, false)
     end
 end
 
 function print_char(io::PrettyTerm, c::Char)
-    if c=='\t'    # Tab
+    io.fresh_line = false
+    if c=='\t'       # Tab
         for k=1:((-io.xpos)&7)
             print(io.sink, ' ')
             io.xpos += 1
         end
-    else          # Other chars. todo: handle other special chars?
+    elseif c=='\x1f' # Unit separator: don't print
+    else             # Other chars. todo: handle other special chars?
         print(io.sink, c)
         io.xpos += 1
         if c == '\n'
             io.xpos = 0
+            io.fresh_line = true
         end
     end
 end
@@ -91,7 +95,7 @@ function print_char(io::PrettyStream, c::Char)
     if io.wrap && (io.parent.xpos >= io.parent.width)  # wrap
         print_char(io.parent, '\n') 
     end  
-    if (io.parent.xpos == 0) && (io.indent > 0)        # indent
+    if io.parent.fresh_line && (io.indent > 0)        # indent
         for k=1:io.indent; print(io.parent, ' '); end
         io.wrap = (2*io.parent.xpos >= io.parent.width)
     end
@@ -205,7 +209,7 @@ function show(io::IO, ex::Expr)
 
     if has(infix, head) && nargs==2             # infix operations
 #        pprint(io, "(",indent(args[1], infix[head], args[2]),")")
-        pprint(io, indent(args[1], infix[head], args[2]))
+        pprint(io, '\x1f', indent(args[1], infix[head], args[2]), '\x1f')
     elseif has(parentypes, head) && nargs >= 1  # :call/:ref/:curly
         print(io, args[1], enclose(parentypes[head][1], 
             comma_list(args[2:end]...),
