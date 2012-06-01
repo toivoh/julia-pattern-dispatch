@@ -143,7 +143,6 @@ end
 const doublecolon = (:(::Int)).head
 
 ## show the body of a :block
-pshow_mainbody(io::PrettyIO, ex) = show(io, ex)
 function pshow_mainbody(io::PrettyIO, ex)
     if is_expr(ex, :block)
         args = ex.args
@@ -158,18 +157,20 @@ function pshow_mainbody(io::PrettyIO, ex)
         show(io, ex)
     end
 end
+nest_mainbody(ex) = PNest(pshow_mainbody, ex)
 
 ## show arguments of a block, and then body
 pshow_body(io::PrettyIO, body) = pshow_body(io, {}, body)
 function pshow_body(io::PrettyIO, arg, body)
-    pprint(io, indent(arg, PNest(pshow_mainbody, body) ))
+    pprint(io, indent(arg, nest_mainbody(body) ))
 end
 function pshow_body(io::PrettyIO, args::Vector, body)
     pprint(io, indent(
-            indent(comma_list(args...)),
-            PNest(pshow_mainbody, body)
+            comma_list(args...),
+            nest_mainbody(body)
         ))
 end
+nest_body(args...) = PNest(pshow_body, args...)
 
 ## show ex as if it were quoted
 function pshow_quoted_expr(io::PrettyIO, sym::Symbol)
@@ -181,12 +182,12 @@ function pshow_quoted_expr(io::PrettyIO, sym::Symbol)
 end
 function pshow_quoted_expr(io::PrettyIO, ex::Expr)
     if ex.head == :block
-        pprint(io, "quote ", PNest(pshow_body, ex), "\nend")
+        pprint(io, "quote ", nest_body(ex), "\nend")
     else
-        pprint(io, "quote(", indent(ex), ")")
+        pprint(io, enclose("quote(", ex, ")"))
     end
 end
-pshow_quoted_expr(io::PrettyIO, ex) =pprint(io, ":($ex)")
+pshow_quoted_expr(io::PrettyIO, ex) = pprint(io, enclose(":(", ex, ")"))
 
 
 ## show an expr
@@ -236,23 +237,23 @@ function show(io::IO, ex::Expr)
         end
     elseif head == :if && nargs == 3  # if/else
         pprint(io, 
-            "if ", PNest(pshow_body, args[1], args[2]),
-            "\nelse ", PNest(pshow_body, args[3]),
+            "if ", nest_body(args[1], args[2]),
+            "\nelse ", nest_body(args[3]),
             "\nend")
     elseif head == :try && nargs == 3 # try[/catch]
-        pprint(io, "try ", PNest(pshow_body, args[1]))
+        pprint(io, "try ", nest_body(args[1]))
         if !(is(args[2], false) && is_expr(args[3], :block, 0))
-            pprint(io, "\ncatch ", PNest(pshow_body, args[2], args[3]))
+            pprint(io, "\ncatch ", nest_body(args[2], args[3]))
         end
         pprint(io, "\nend")
     elseif head == :let               # :let 
         pprint(io, "let ", 
-            PNest(pshow_body, args[2:end], args[1]), "\nend")
+            nest_body(args[2:end], args[1]), "\nend")
     elseif head == :block
-        pprint(io, "begin ", PNest(pshow_body, ex), "\nend")
+        pprint(io, "begin ", nest_body(ex), "\nend")
     elseif contains([:for, :while, :function, :if, :type], head) && nargs == 2
         pprint(io, string(head), " ", 
-            PNest(pshow_body, args[1], args[2]), "\nend")
+            nest_body(args[1], args[2]), "\nend")
     else
         print(io, head, enclose("(", comma_list(args...), ")"))
     end
