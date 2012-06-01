@@ -6,10 +6,11 @@ macro expect(pred)
 end
 
 
-## -- PrettyIO ----------------------------------------------------------------
+# -- PrettyIO -----------------------------------------------------------------
 
 abstract PrettyIO <: IO
 
+##  Methods to redirect strings etc output to a PrettyIO to one place ##
 print(io::PrettyIO, c::Char) = print_char(io, c)
 for S in [:ASCIIString, :UTF8String, :RopeString, :String]
     @eval print(io::PrettyIO, s::($S)) = print_str(io, s)
@@ -19,14 +20,14 @@ show(io::PrettyIO, s::Symbol) = print(io, string(s))
 
 print_str(io::PrettyIO, s::String) = (for c in s; print_char(io, c); end)
 
-
+# pprintln/pprint/pshow: make sure to use a PrettyIO, then println/print/show
+println(args...) = pprint(args..., '\n')
 pprint(io::IO, args...) = print(pretty(io), args...)
-pprint(args...) = pprint(OUTPUT_STREAM, args...)
-
 pshow(io::IO, args...) = show(pretty(io), args...)
+pprint(args...) = pprint(OUTPUT_STREAM, args...)
 pshow(args...) = pshow(OUTPUT_STREAM, args...)
 
-
+# fix to avoid jl_show_any on PrettyIO (segfaults)
 function show(io, x) 
     if isa(io, PrettyIO)
         print(io, sshow(x))
@@ -39,6 +40,7 @@ end
 
 
 ## -- PrettyTerm --------------------------------------------------------------
+# Basic pretty terminal. Keeps track of column position and line width.
 
 type PrettyTerm <: PrettyIO
     sink::IO
@@ -52,12 +54,12 @@ type PrettyTerm <: PrettyIO
 end
 
 function print_char(io::PrettyTerm, c::Char)
-    if c=='\t'    # tab
+    if c=='\t'    # Tab
         for k=1:((-io.xpos)&7)
             print(io.sink, ' ')
             io.xpos += 1
         end
-    else
+    else          # Other chars. todo: handle other special chars?
         print(io.sink, c)
         io.xpos += 1
         if c == '\n'
@@ -68,13 +70,14 @@ end
 
 
 ## -- PrettyStream ------------------------------------------------------------
+# Basic pretty printing context. Keeps track of indenting and line wrapping.
 
 type PrettyStream <: PrettyIO
     parent::PrettyTerm
     indent::Int
     wrap::Bool
 
-    PrettyStream(parent::PrettyTerm, indent::Int) = new(parent, indent, false)
+    PrettyStream(parent::PrettyTerm, indent::Int) = new(parent, indent, true)
 end
 
 pretty(io::PrettyIO) = io
@@ -104,7 +107,7 @@ function print_str(io::PrettyStream, s::String)
 end
 
 
-# -- Indent -------------------------------------------------------------------
+# -- PNest --------------------------------------------------------------------
 
 type PNest
     f::Function
@@ -112,14 +115,8 @@ type PNest
 
     PNest(f::Function, extra_args...) = new(f, extra_args)
 end
-show(io::IO, nest::PNest) = nest.f(io, nest.extra_args...)
-# show(io::PrettyIO, nest::PNest) = nest.f(io, nest.extra_args...)
-# show(io::IO, nest::PNest) = pshow(io, nest)
+print(io::IO, nest::PNest) = nest.f(io, nest.extra_args...)
 
-# type PNest
-#     f::Function
-# end
-# print(io::IO, nest::PNest) = nest.f(io)
 
 indent(args...) = PNest(io->print(indented(io), args...))
 
@@ -132,38 +129,18 @@ delim_list(args, pre, post) = PNest(io->(begin
         end
     end
 ))
+delim_list(args, post) = delim_list(args, "", post)
 
-# type Indent
-#     args::Tuple
-# end
-# indent(args...) = Indent(args)
+comma_list(args...) = delim_list(args, ", ")
 
-# print(io::IO, ind::Indent) = print(indented(io), ind.args...)
+function enclose(args...) 
+    PNest(io->(print(io,args[1],indent(args[2:end-1]...),args[end])))
+end
 
 
 # == Expr prettyprinting ======================================================
 
-const doublecolon = @eval (:(x::Int)).head
-
-## list printing
-function pshow_comma_list(io::PrettyIO, args::Vector, 
-                          open::String, close::String) 
-    pshow_delim_list(io, args, open, ", ", close)
-end
-function pshow_delim_list(io::PrettyIO, args::Vector, open::String, 
-                          delim::String, close::String)
-    pprint(io, indent(open, 
-                PNest(pshow_list_delim, args, delim)),
-           close)
-end
-function pshow_list_delim(io::PrettyIO, args::Vector, delim::String)
-    for (arg, k) in enumerate(args)
-        show(io, arg)
-        if k < length(args)
-            pprint(io, delim)
-        end
-    end
-end
+const doublecolon = (:(::Int)).head
 
 ## show the body of a :block
 pshow_mainbody(io::PrettyIO, ex) = show(io, ex)
@@ -189,7 +166,7 @@ function pshow_body(io::PrettyIO, arg, body)
 end
 function pshow_body(io::PrettyIO, args::Vector, body)
     pprint(io, indent(
-            PNest(pshow_comma_list, args, "", ""), 
+            indent(comma_list(args...)),
             PNest(pshow_mainbody, body)
         ))
 end
@@ -229,15 +206,16 @@ function show(io::IO, ex::Expr)
 #        pprint(io, "(",indent(args[1], infix[head], args[2]),")")
         pprint(io, indent(args[1], infix[head], args[2]))
     elseif has(parentypes, head) && nargs >= 1  # :call/:ref/:curly
-        pprint(io, args[1])
-        pshow_comma_list(io, args[2:end], parentypes[head]...)
+        print(io, args[1], enclose(parentypes[head][1], 
+            comma_list(args[2:end]...),
+        parentypes[head][2]))
     elseif (head == :comparison) && (nargs>=3 && isodd(nargs)) # :comparison
         pprint("(",indent(args),")")
     elseif ((contains([:return, :abstract, :const] , head) && nargs==1) ||
             contains([:local, :global], head))
-        pshow_comma_list(io, args, string(head)*" ", "")
+        print(io, string(head)*" ", indent(comma_list(args...)))
     elseif head == :typealias && nargs==2
-        pshow_delim_list(io, args, string(head)*" ", " ", "")
+        print(io, string(head)*" ", indent(args[1], " ", args[2]))
     elseif (head == :quote) && (nargs==1)       # :quote
         pshow_quoted_expr(io, args[1])
     elseif (head == :line) && (1 <= nargs <= 2) # :line
@@ -276,7 +254,6 @@ function show(io::IO, ex::Expr)
         pprint(io, string(head), " ", 
             PNest(pshow_body, args[1], args[2]), "\nend")
     else
-        pprint(io, head)
-        pshow_comma_list(indent(io), args, "(", ")")
+        print(io, head, enclose("(", comma_list(args...), ")"))
     end
 end
