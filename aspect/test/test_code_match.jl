@@ -15,14 +15,14 @@ end
 function pattern(p::ObjectPattern, factors::AspectPattern...)
     ObjectPattern(p.labels, p.factors..., factors...)
 end
-function pattern(label::Label, factors::AspectPattern...)
+function pattern(label::LabelPattern, factors::AspectPattern...)
     ObjectPattern([label], factors...)
 end
 pattern(factors::AspectPattern...) = pattern(Var(gensym()), factors...)
 
 
-patom(value) = pattern(Atom(value))
-pvar(name::Symbol) = pattern(Var(name))
+patom(value) = Atom(value)
+pvar(name::Symbol) = PVar(name)
 
 pkey(key::AspectKey, p::Pattern) = pattern(KeyPattern(key, p))
 function pkey(key::AspectKey, subkey, p::ObjectPattern)

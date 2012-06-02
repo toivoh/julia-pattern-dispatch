@@ -16,6 +16,10 @@ quot(value) = expr(:quote, value)
 # -- Basic definitions ------------------------------------------------------
 
 abstract Pattern
+abstract   ObjectPattern <: Pattern
+abstract     SetPattern <: ObjectPattern
+abstract     NamedPattern <: ObjectPattern
+abstract       IdPattern <: NamedPattern
 
 abstract Aspect{T<:Pattern}
 pattype{T}(::Aspect{T}) = T
@@ -34,80 +38,70 @@ end
 # -- Patterns -----------------------------------------------------------------
 
 
-abstract AspectPattern <: Pattern
-
-type TypePattern <: AspectPattern
-    T::Union(Type, Tuple)
-end
-code_match(c, p::TypePattern,ex) = emit_pred(c,:( isa(($ex),($quot(p.T))) ))
-
-type KeyPattern <: AspectPattern
-    key::AspectKey
-    p::Pattern
-
-    function KeyPattern(key::AspectKey, p::Pattern) 
-        @expect isa(p, pattype(key.aspect))
-        new(key, p)
-    end
-end
-code_match(c, p::KeyPattern,ex) = code_match(c, p.p,code_get(c,p.key, ex))
-
-function show(io::IO, p::KeyPattern)
-    pprint(io, "KeyPattern(", indent(p.key.name, ", ", p.p), ")")
-end
-
-
-## Label for an ObjectPattern ##
-abstract Label
-
-type Var <: Label
-    name::Symbol
-end
-show(io::IO, var::Var) = print(io, "Var(:", var.name, ")")
-type Atom{T} <: Label
-    value::T
-end
-
-# Collected labels and (AspectKey, Pattern) pairs
-type ObjectPattern <: Pattern
-    labels::Vector{Label}
-    factors::Vector{AspectPattern} # assumed topsorted by aspect key
-
-    function ObjectPattern(labels, factors::AspectPattern...)
-        @expect length(labels) >= 1
-        # todo: topsort factors!
-        new(Label[labels...], AspectPattern[factors...])
-    end
-end
-#ObjectPattern(label::Label, ps) = ObjectPattern(label, AspectPattern[ps...])
-
-get_label(p::ObjectPattern) = p.labels[1]
-
-function code_match(c, po::ObjectPattern,ex)
-    symbol = emit_bind(c, get_label(po),ex)
-    for p in po.factors;  code_match(c, p,symbol);  end
-end
-
-function show(io::IO, p::ObjectPattern) 
-    pprint(io, "ObjectPattern(", 
-           indent(
-               p.labels, ", [", 
-                   delim_list(p.factors, '\n', ','),
-               "]"
-           ), 
-       ")")
-end
-
-
 # Collected (index, Pattern) pairs for index properties
 type IndexPattern{K} <: Pattern
     factors::Dict{K,ObjectPattern}
+
+    IndexPattern(factors::Dict) = new(convert(Dict{K,ObjectPattern}, factors))
 end
-#IndexPattern{K}(factors::Dict{K,ObjectPattern}) = IndexPattern{K}(factors)
 
 function code_match(c, ps::IndexPattern,prop)
     for (key, p) in ps.factors;  code_match(c, p,code_get(c,prop, key));  end
 end
+
+
+type TypePattern <: SetPattern
+    T::Union(Type, Tuple)
+end
+code_match(c, p::TypePattern,ex) = emit_pred(c,:( isa(($ex),($quot(p.T))) ))
+
+
+type ProductPattern <: SetPattern
+    factors::Dict{AspectKey, Pattern}
+end
+
+function code_match(c, pp::ProductPattern,sym::Symbol)
+    for p in pp.factors;  code_match(c, pp,sym);  end
+end
+
+function show(io::IO, p::ProductPattern) 
+    pprint(io, enclose("ProductPattern(", p.factors, ")"))
+end
+
+
+type NamedProduct <: NamedPattern
+    id::IdPattern
+    prod::ProductPattern
+end
+get_label(p::NamedProduct) = p.id
+
+function code_match(c, p::NamedProduct,ex)
+    sym = code_match(c, p.id,ex)
+    code_match(c, p.prod,sym)
+end
+
+type PVar <: IdPattern
+    name::Symbol
+end
+show(io::IO, var::PVar) = print(io, "PVar(:", var.name, ")")
+type Atom{T} <: IdPattern
+    value::T
+end
+
+get_label(p::IdPattern) = p
+
+# returns symbol that gets bound to ex
+code_match(c, p::IdPattern,ex) = emit_bind(c, p,ex)
+
+
+#code_match(c, p::KeyPattern,ex) = code_match(c, p.p,code_get(c,p.key, ex))
+# function show(io::IO, p::KeyPattern)
+#     pprint(io, "KeyPattern(", indent(p.key.name, ", ", p.p), ")")
+# end
+
+
+
+
 
 
 # -- Aspects ------------------------------------------------------------------
@@ -158,9 +152,9 @@ ref_asp   = AspectKey(:ref_asp,   RefProperty(),   {type_asp, func_asp})
 # -- Matching code generation -------------------------------------------------
 
 type CMContext
-    assigned_vars::Set{Var}
+    assigned_vars::Set{PVar}
     code::Vector
-    CMContext() = new(Set{Var}(), {})
+    CMContext() = new(Set{PVar}(), {})
 end
 
 emit(c::CMContext, ex) = push(c.code, ex)
@@ -180,7 +174,7 @@ end
 
 # return symbol to which ex is assigned
 emit_bind(c::CMContext, a::Atom, ex) = emit_egal_pred(c, quot(a.value), ex)
-function emit_bind(c::CMContext, var::Var, ex)
+function emit_bind(c::CMContext, var::PVar, ex)
     name = var.name
     if has(c.assigned_vars, var)
         emit_egal_pred(c, name, ex)
