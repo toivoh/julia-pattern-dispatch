@@ -29,6 +29,19 @@ pref  (index::Tuple, p::ObjectPattern) = pindpat(ref_asp,   index, p)
 papply(args::Tuple,  p::ObjectPattern) = pindpat(apply_asp, args,  p)
 
 
+
+@show TypePattern(Int)
+@show patom(42)
+@show pvar(:x)
+
+println()
+@show pfunc(length, patom(3))
+@show pfield(:x, patom(11))
+@show pref((2,), patom(12))
+@show papply((2,11), patom(-1))
+
+println()
+
 @show code(TypePattern(Int))
 @show code(patom(42))
 @show code(pvar(:x))
