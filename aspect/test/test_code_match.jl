@@ -12,21 +12,27 @@ function code(p::Pattern)
     expr(:block, c.code)
 end
 
-plabel(label::Label) = ObjectPattern(label,())
-patom(value) = plabel(Atom(value))
-pvar(name::Symbol) = plabel(Var(name))
+function pattern(p::ObjectPattern, factors::AspectPattern...)
+    ObjectPattern(p.labels, p.factors..., factors...)
+end
+function pattern(label::Label, factors::AspectPattern...)
+    ObjectPattern([label], factors...)
+end
+pattern(factors::AspectPattern...) = pattern(Var(gensym()), factors...)
 
-ppat(p::AspectPattern) = ObjectPattern(Var(gensym()), [p])
-ppat(key::AspectKey, p::Pattern) = ppat(AspectPattern(key, p))
-#ppat(key::AspectKey, args...)=ppat(key, pattype(key.aspect)(args...))
-function pindpat(key::AspectKey, subkey, p::ObjectPattern)
-    ppat(key, pattype(key.aspect)({subkey=>p}))
+
+patom(value) = pattern(Atom(value))
+pvar(name::Symbol) = pattern(Var(name))
+
+pkey(key::AspectKey, p::Pattern) = pattern(KeyPattern(key, p))
+function pkey(key::AspectKey, subkey, p::ObjectPattern)
+    pkey(key, pattype(key.aspect)({subkey=>p}))
 end
 
-pfunc (f::Function,  p::ObjectPattern) = pindpat(func_asp,  f,     p)
-pfield(name::Symbol, p::ObjectPattern) = pindpat(field_asp, name,  p)
-pref  (index::Tuple, p::ObjectPattern) = pindpat(ref_asp,   index, p)
-papply(args::Tuple,  p::ObjectPattern) = pindpat(apply_asp, args,  p)
+pfunc (f::Function,  p::ObjectPattern) = pkey(func_asp,  f,     p)
+pfield(name::Symbol, p::ObjectPattern) = pkey(field_asp, name,  p)
+pref  (index::Tuple, p::ObjectPattern) = pkey(ref_asp,   index, p)
+papply(args::Tuple,  p::ObjectPattern) = pkey(apply_asp, args,  p)
 
 
 
@@ -51,4 +57,15 @@ println()
 @show code(pfield(:x, patom(11)))
 @show code(pref((2,), patom(12)))
 @show code(papply((2,11), patom(-1)))
+
+println()
+@show TypePattern(Int)
+@show patom(42)
+@show pvar(:x)
+
+println()
+@show pfunc(length, patom(3))
+@show pfield(:x, patom(11))
+@show pref((2,), patom(12))
+@show papply((2,11), patom(-1))
 

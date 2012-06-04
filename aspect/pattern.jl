@@ -33,24 +33,27 @@ end
 
 # -- Patterns -----------------------------------------------------------------
 
-type TypePattern <: Pattern
+
+abstract AspectPattern <: Pattern
+
+type TypePattern <: AspectPattern
     T::Union(Type, Tuple)
 end
 code_match(c, p::TypePattern,ex) = emit_pred(c,:( isa(($ex),($quot(p.T))) ))
 
-type AspectPattern <: Pattern
+type KeyPattern <: AspectPattern
     key::AspectKey
     p::Pattern
 
-    function AspectPattern(key::AspectKey, p::Pattern) 
+    function KeyPattern(key::AspectKey, p::Pattern) 
         @expect isa(p, pattype(key.aspect))
         new(key, p)
     end
 end
-code_match(c, p::AspectPattern,ex) = code_match(c, p.p,code_get(c,p.key, ex))
+code_match(c, p::KeyPattern,ex) = code_match(c, p.p,code_get(c,p.key, ex))
 
-function show(io::IO, p::AspectPattern)
-    pprint(io, "AspectPattern(", indent(p.key.name, ", ", p.p), ")")
+function show(io::IO, p::KeyPattern)
+    pprint(io, "KeyPattern(", indent(p.key.name, ", ", p.p), ")")
 end
 
 
@@ -65,27 +68,32 @@ type Atom{T} <: Label
     value::T
 end
 
-# Label and collected (AspectKey, Pattern) pairs
+# Collected labels and (AspectKey, Pattern) pairs
 type ObjectPattern <: Pattern
-    label::Label
+    labels::Vector{Label}
     factors::Vector{AspectPattern} # assumed topsorted by aspect key
+
+    function ObjectPattern(labels, factors::AspectPattern...)
+        @expect length(labels) >= 1
+        # todo: topsort factors!
+        new(Label[labels...], AspectPattern[factors...])
+    end
 end
-# todo: topsort factors!
-ObjectPattern(label::Label, ps) = ObjectPattern(label, AspectPattern[ps...])
+#ObjectPattern(label::Label, ps) = ObjectPattern(label, AspectPattern[ps...])
+
+get_label(p::ObjectPattern) = p.labels[1]
 
 function code_match(c, po::ObjectPattern,ex)
-    symbol = emit_bind(c, po.label,ex)
+    symbol = emit_bind(c, get_label(po),ex)
     for p in po.factors;  code_match(c, p,symbol);  end
 end
 
 function show(io::IO, p::ObjectPattern) 
     pprint(io, "ObjectPattern(", 
            indent(
-               p.label, ", [", #indent(
+               p.labels, ", [", 
                    delim_list(p.factors, '\n', ','),
-               #), 
                "]"
-#               PNest(io->showall(io, p.factors))
            ), 
        ")")
 end
@@ -108,11 +116,12 @@ end
 code_get(c,key::AspectKey, ex) = code_get(c,key.aspect, ex)
 
 
-type TypeAspect <: Aspect{TypePattern}; end
-code_get(c,::TypeAspect, ex) = ex
+type SelfAspect{T} <: Aspect{T}; end
+code_get(c,::SelfAspect, ex) = ex
 
-abstract Property{T} <: Aspect{T}
-abstract   IndexProperty{K} <: Property{IndexPattern{K}}
+#abstract Property{T} <: Aspect{T}
+#abstract   IndexProperty{K} <: Property{IndexPattern{K}}
+abstract IndexProperty{K} <: Aspect{IndexPattern{K}}
 
 ## Bundles an IndexProperty with a value expression until it can be indexed ##
 type PropObj{T<:IndexProperty}
@@ -136,7 +145,7 @@ code_get(c, x::PropObj{ApplyProperty}, key::Tuple)    = :( ($x.ex)($key...) )
 
 # -- Aspect DAG ---------------------------------------------------------------
 
-type_asp  = AspectKey(:type_asp,  TypeAspect(),    {})
+type_asp  = AspectKey(:type_asp,  SelfAspect{TypePattern}(), {})
 
 func_asp  = AspectKey(:func_asp,  FuncProperty(),  {type_asp})
 field_asp = AspectKey(:field_asp, FieldProperty(), {type_asp})
