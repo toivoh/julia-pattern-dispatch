@@ -46,3 +46,34 @@ macro symshowln(call)
         println("sym\t= ", ($op)($y,$x))
     end
 end
+
+macro pshow(ex)
+    :(pprintln(($string(ex)), "\t= ", ($ex)) )
+end
+macro pshowln(ex)
+    :(pprintln(($string(ex)), "\n\t=", ($ex)) )
+end
+
+# todo: pull these two together!
+macro psymshow(call)
+    @expect is_expr(call, :call)
+    args = call.args
+    @expect length(args)==3
+    op, x, y = tuple(args...)
+    quote
+        pprint($string(call))
+        pprint("\t= ",    ($call))
+        pprintln(",\tsym = ", ($op)($y,$x))
+    end
+end
+macro psymshowln(call)
+    @expect is_expr(call, :call)
+    args = call.args
+    @expect length(args)==3
+    op, x, y = tuple(args...)
+    quote
+        pprintln($string(call))
+        pprintln("\t= ",    ($call))
+        pprintln("sym\t= ", ($op)($y,$x))
+    end
+end

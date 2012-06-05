@@ -1,6 +1,6 @@
 
 load("pattern/req.jl")
-#req("pretty/pretty.jl")
+req("pretty/pretty.jl")
 req("circular/utils.jl")
 
 
@@ -31,6 +31,8 @@ type Atom{T} <: BareNode
     value::T
 end
 is_egal{T}(x::Atom{T},y::Atom{T}) = is_egal(x.value,y.value)
+
+show(io::IO, p::Atom) = pprint(io, enclose("Atom(", p.value, ")"))
 
 type PVar <: BareNode
     name::Symbol
@@ -148,3 +150,6 @@ function unify(s::Subs, ps::TuplePattern,xs::TuplePattern)
     end
     TuplePattern(tuple(ys...))
 end
+
+
+show(io::IO, p::TuplePattern) = print(io, enclose("TuplePattern(",p.t,")"))
