@@ -21,7 +21,7 @@ show(io::PrettyIO, s::Symbol) = print(io, string(s))
 print_str(io::PrettyIO, s::String) = (for c in s; print_char(io, c); end)
 
 # pprintln/pprint/pshow: make sure to use a PrettyIO, then println/print/show
-println(args...) = pprint(args..., '\n')
+pprintln(args...) = pprint(args..., '\n')
 pprint(io::IO, args...) = print(pretty(io), args...)
 pshow(io::IO, args...) = show(pretty(io), args...)
 pprint(args...) = pprint(OUTPUT_STREAM, args...)
@@ -29,13 +29,32 @@ pshow(args...) = pshow(OUTPUT_STREAM, args...)
 
 # fix to avoid jl_show_any on PrettyIO (segfaults)
 function show(io, x) 
+    io::IO
     if isa(io, PrettyIO)
-        print(io, sshow(x))
-    elseif isa(io, IO)
+#        print(io, sshow(x))
+        default_show(io, x)
+    elseif isa(io, IOStream)
         ccall(:jl_show_any, Void, (Any, Any,), io, x)
     else
         error("unimplemented!")
     end
+end
+
+
+default_show(io::IO, x) = default_show(io, typeof(x), x)
+
+const null_symbol = symbol("")
+
+default_show(io, T, x) = sshow(x) # works as long as it invokes jl_show_any...
+function default_show(io, T::CompositeKind, x)
+    fields = filter(x->(x!=null_symbol), [T.names...])
+#     for field in fields
+#         value = getfield(x, field)
+#         print(value)
+#     end
+    values = {getfield(x, field) for field in fields}
+    print(io, sshow(T), enclose("(", comma_list(values...), ")"))
+#    print(io, sshow(T), enclose("(", comma_list(fields...), ")"))
 end
 
 
@@ -86,7 +105,7 @@ end
 
 pretty(io::PrettyIO) = io
 pretty(io::PrettyTerm) = PrettyStream(io, 0)
-pretty(io::IO) = pretty(PrettyTerm(io, 80))
+pretty(io::IO) = pretty(PrettyTerm(io, 79))
 
 indented(io::PrettyStream) = PrettyStream(io.parent, io.indent+4)
 indented(io::IO) = indented(pretty(io))
