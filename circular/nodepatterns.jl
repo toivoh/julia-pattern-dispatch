@@ -1,4 +1,13 @@
 
+load("pattern/req.jl")
+#req("pretty/pretty.jl")
+req("circular/utils.jl")
+
+
+is_egal(x,y) = is(x,y)
+
+
+
 abstract MaybePattern
 type       NonePattern  <: MaybePattern;  end
 abstract   Pattern      <: MaybePattern
@@ -6,7 +15,7 @@ abstract     TreePattern <: Pattern
 abstract     PNode <: Pattern
 abstract       BareNode <: PNode
 
-const nonematch = NonePattern
+const nonematch = NonePattern()
 
 
 type TreeNode <: PNode
@@ -21,12 +30,17 @@ treenode(simple_name::BareNode, tree::TreePattern) = TreeNode(simple_name,tree)
 type Atom{T} <: BareNode
     value::T
 end
+is_egal{T}(x::Atom{T},y::Atom{T}) = is_egal(x.value,y.value)
+
 type PVar <: BareNode
     name::Symbol
     istemp::Bool
 end
-PVar(name::Symbol) = Pvar(name, false)
+PVar(name::Symbol) = PVar(name, false)
 
+function show(io::IO, p::PVar) 
+    print(io, p.istemp ? "PVar(:$(p.name),true)" : "PVar(:$(p.name))")
+end
 
 type DelayedTree <: TreePattern
     p::TreePattern
@@ -57,8 +71,10 @@ function lookup(s::Subs, p::PNode)
 end
 
 function assign(s::Subs, x::PNode, p::PNode)
-    @expect !has(s, p)
-    s.dict[p] = x
+    @expect !has(s.dict, p)
+    if !is_egal(x,p)
+        s.dict[p] = x
+    end
 end
 
 function delayed_unify(s::Subs, p::TreePattern,x::TreePattern)
@@ -79,18 +95,19 @@ function unite(p::PNode, x::PNode)
 
         # unify the tree patterns
         y = unify(s, p,x)
-        if is(y,nonematch);  return  nonematch;  end
+        if is(y,nonematch);  return nonematch;  end
 
         d.result = y
     end
-    s, y  # todo: apply all substitutions
+    y, s  # todo: apply all substitutions
 end
 
 function unite(s::Subs, p::PNode, x::PNode)
     p, x = lookup(s,p), lookup(s,x)
-    if is(p,x);  return x;  end
+    if is_egal(p,x);  return x;  end
     
     y = unify(s, p,x)
+    if is(y,nonematch);  return nonematch;  end
     s[p] = s[x] = y    
 end
 
@@ -101,8 +118,12 @@ function unify(s::Subs, p::TreeNode,x::TreeNode)
         delayed_unify(s, p.tree,x.tree))
 end
 
-function unify(s::Subs, p::BareNode,x::TreeNode)
-    treenode(unify(s, p,x.simple_name), x.tree)
+function unify(s::Subs, p::BareNode,x::TreeNode)    
+#    treenode(unify(s, p,x.simple_name), x.tree)
+    simple_name = unify(s, p,x.simple_name)
+    if is_egal(simple_name, x.simple_name);  x
+    else;                               treenode(simple_name, x.tree)
+    end
 end
 
 unify(s::Subs, p::PVar,x::BareNode) = x
@@ -116,14 +137,14 @@ type TuplePattern <: TreePattern
 end
 
 function unify(s::Subs, ps::TuplePattern,xs::TuplePattern)
-    np, nx = length(ps), length(xs)
+    np, nx = length(ps.t), length(xs.t)
     if np != nx;  return nonematch;  end
     
     ys = cell(np)
     for k=1:np
-        y = unite(s, ps[k],xs[k])
+        y = unite(s, ps.t[k],xs.t[k])
         if is(nonematch,y);  return nonematch;  end
         ys[k] = y
     end
-    tuple(ys...)
+    TuplePattern(tuple(ys...))
 end
