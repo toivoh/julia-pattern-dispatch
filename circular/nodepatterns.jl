@@ -61,10 +61,12 @@ undelayed(p::TreePattern) = p
 typealias SubsDict Dict{PNode,PNode}
 type Subs
     dict::SubsDict
+    disproved_p_ge_x::Bool
     delay_queue::Vector{DelayedTree}
 
-    Subs() = new(SubsDict(),[])
+    Subs() = new(SubsDict(),false,[])
 end
+not_pgex!(s::Subs) = (s.disproved_p_ge_x = true; s)
 
 function lookup(s::Subs, p::PNode)
     if !has(s.dict, p);  p
@@ -127,9 +129,15 @@ function unify(s::Subs, p::BareNode,x::TreeNode)
     else;                               treenode(simple_name, x.tree)
     end
 end
+# NB! Assumes that any tree is more specific than no tree:
+unify(s::Subs, p::TreeNode,x::BareNode) = unify(not_pgex!(s), x,p)
+
 
 unify(s::Subs, p::PVar,x::BareNode) = x
 unify(s::Subs, p::Atom,x::Atom)     = is_egal(p,x) ? x : nonematch
+
+#unify(s::Subs, p::Atom,x::PVar) = unify(not_pgex!(s), x,p)
+unify(s::Subs, p::Atom,x::PVar) = (not_pgex!(s); unify(s, x,p))
 
 
 # -- TreePatterns -------------------------------------------------------------
