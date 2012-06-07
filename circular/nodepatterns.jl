@@ -9,22 +9,34 @@ is_egal(x,y) = is(x,y)
 
 
 abstract MaybePattern
-type       NonePattern  <: MaybePattern;  end
-abstract   Pattern      <: MaybePattern
+type       NonePattern <: MaybePattern;  end
+abstract   Pattern     <: MaybePattern
 abstract     TreePattern <: Pattern
-abstract     PNode <: Pattern
-abstract       BareNode <: PNode
+abstract     PNode       <: Pattern
+abstract       BareNode    <: PNode
 
 const nonematch = NonePattern()
 
+show(io::IO, ::NonePattern) = print(io, "nonematch")
+
+show_sig(io::IO, x) = show(io, x)
+show_sig(x) = show_sig(OUTPUT_STREAM, x)
+print_sig(io::IO, args...) = foreach(arg->print_sig(io, arg), args)
+print_sig(io::IO, x::Union(Char, String)) = print(io, x)
+print_sig(io::IO, x) = show_sig(io, x)
+print_sig(args...) = print_sig(OUTPUT_STREAM, args...)
+
+psig(args...) = PNest(print_sig, args...)
 
 type TreeNode <: PNode
     simple_name::BareNode
     tree::TreePattern
 end
 
-treenode(           ::NonePattern,  ::TreePattern) = nonematch
+treenode(::NonePattern, ::TreePattern) = nonematch
 treenode(simple_name::BareNode, tree::TreePattern) = TreeNode(simple_name,tree)
+
+show_sig(io::IO, p::TreeNode) = print_sig(io, p.simple_name, "~", p.tree)
 
 
 type Atom{T} <: BareNode
@@ -33,6 +45,7 @@ end
 is_egal{T}(x::Atom{T},y::Atom{T}) = is_egal(x.value,y.value)
 
 show(io::IO, p::Atom) = pprint(io, enclose("Atom(", p.value, ")"))
+show_sig(io::IO, p::Atom) = print(io, p.value)
 
 type PVar <: BareNode
     name::Symbol
@@ -43,6 +56,7 @@ PVar(name::Symbol) = PVar(name, false)
 function show(io::IO, p::PVar) 
     print(io, p.istemp ? "PVar(:$(p.name),true)" : "PVar(:$(p.name))")
 end
+show_sig(io::IO, p::PVar) = print(io, p.name)
 
 type DelayedTree <: TreePattern
     p::TreePattern
@@ -88,6 +102,18 @@ function delayed_unify(s::Subs, p::TreePattern,x::TreePattern)
 end
 
 
+function show_sig(io::IO, s::Subs)
+    print(io, "Subs(", (s.disproved_p_ge_x ? "  " : ">="), ", {")
+    let io=indented(io)
+        for (k,v) in s.dict
+            print(io, "\n", psig(k), " => ", psig(v), ", ")
+        end
+    end
+    if !isempty(s.dict);  print(io, "\n");  end
+    print(io, "}", s.delay_queue, ")")
+end
+
+
 # -- unite --------------------------------------------------------------------
 
 function unite(p::PNode, x::PNode)
@@ -98,7 +124,7 @@ function unite(p::PNode, x::PNode)
         p, x = undelayed(d.p), undelayed(d.x)
 
         # unify the tree patterns
-        y = unify(s, p,x)
+        local y = unify(s, p,x)
         if is(y,nonematch);  return nonematch;  end
 
         d.result = y
@@ -161,3 +187,11 @@ end
 
 
 show(io::IO, p::TuplePattern) = print(io, enclose("TuplePattern(",p.t,")"))
+
+function show_sig(io::IO, ps::TuplePattern)
+    print(io, "(")
+    for p in ps.t
+        print_sig(io, p, ",")
+    end
+    print(io, ")")
+end
