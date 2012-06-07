@@ -33,8 +33,18 @@ type TreeNode <: PNode
     tree::TreePattern
 end
 
+# treenode(simple_name, tree): create a TreeNode
+# Takes ownership of tree if it's a DelayedTree
 treenode(::NonePattern, ::TreePattern) = nonematch
-treenode(simple_name::BareNode, tree::TreePattern) = TreeNode(simple_name,tree)
+function treenode(simple_name::BareNode, tree::TreePattern) 
+    node = TreeNode(simple_name,tree)
+    if isa(tree, DelayedTree)
+        # take over ownership of the delayed tree 
+        # ==> updates node when it has been formed
+        tree.owner = node
+    end
+    node
+end
 
 show_sig(io::IO, p::TreeNode) = print_sig(io, p.simple_name, "~", p.tree)
 
@@ -62,6 +72,7 @@ type DelayedTree <: TreePattern
     p::TreePattern
     x::TreePattern
     result::Union(TreePattern,NonePattern, Nothing)
+    owner::TreeNode
     
     DelayedTree(p::TreePattern, x::TreePattern) = new(p, x, nothing)
 end
@@ -128,6 +139,7 @@ function unite(p::PNode, x::PNode)
         if is(y,nonematch);  return nonematch;  end
 
         d.result = y
+        d.owner.tree = y  # update owner
     end
     y, s  # todo: apply all substitutions
 end
@@ -152,7 +164,7 @@ function unify(s::Subs, p::BareNode,x::TreeNode)
 #    treenode(unify(s, p,x.simple_name), x.tree)
     simple_name = unify(s, p,x.simple_name)
     if is_egal(simple_name, x.simple_name);  x
-    else;                               treenode(simple_name, x.tree)
+    else;                                    treenode(simple_name, x.tree)
     end
 end
 # NB! Assumes that any tree is more specific than no tree:
@@ -160,7 +172,7 @@ unify(s::Subs, p::TreeNode,x::BareNode) = unify(not_pgex!(s), x,p)
 
 
 unify(s::Subs, p::PVar,x::BareNode) = x
-unify(s::Subs, p::Atom,x::Atom)     = is_egal(p,x) ? x : nonematch
+unify(s::Subs, p::Atom,x::Atom) = is_egal(p,x) ? x : (not_pgex!(s); nonematch)
 
 #unify(s::Subs, p::Atom,x::PVar) = unify(not_pgex!(s), x,p)
 unify(s::Subs, p::Atom,x::PVar) = (not_pgex!(s); unify(s, x,p))
