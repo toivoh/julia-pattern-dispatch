@@ -90,6 +90,7 @@ undelayed(p::BareNode) = p
 map_nodes(f::Function, p::PNode) = f(p)
 map_nodes(f::Function, p::DelayedTree) = map_nodes(f, p.result)
 
+
 as_pnode(p::TreePattern) = treenode(PVar(gensym(),true), p)
 as_pnode(p::MaybePattern) = p
 
@@ -142,10 +143,12 @@ end
 
 # -- unite --------------------------------------------------------------------
 
-unite(p::PNode, x::PNode) = unite_ps(p,x)[1]
-function unite_ps(p::PNode, x::PNode)
-    s = Subs()
-    y = unite(s, p,x)
+unite(         p::PNode, x::PNode) = unite_ps(   p,x)[1]
+unite(s::Subs, p::PNode, x::PNode) = unite_ps(s, p,x)[1]
+
+unite_ps(p::PNode, x::PNode) = unite_ps(Subs(), p,x)
+function unite_ps(s::Subs, p::PNode, x::PNode)
+    y = unite_step(s, p,x)
     while !isempty(s.delay_queue)
         d = pop(s.delay_queue)
         p, x = undelayed(d.p), undelayed(d.x)
@@ -160,7 +163,7 @@ function unite_ps(p::PNode, x::PNode)
     y, s
 end
 
-function unite(s::Subs, p::PNode, x::PNode)
+function unite_step(s::Subs, p::PNode, x::PNode)
     p, x = lookup(s,p), lookup(s,x)
     if is_egal(p,x);  return x;  end
     
@@ -168,6 +171,8 @@ function unite(s::Subs, p::PNode, x::PNode)
     if is(y,nonematch);  return nonematch;  end
     s[p] = s[x] = y    
 end
+
+make_node_tree(s::Subs, ps::Tuple) = map(p->(make_node_tree(s,p)), ps)
 
 make_node_tree(s::Subs, ::NoneMatch) = nonematch
 make_node_tree(s::Subs, p::PNode) = make_node_tree(s,Set{TreeNode}(), p)
@@ -226,7 +231,7 @@ function unify(s::Subs, ps::TuplePattern,xs::TuplePattern)
     
     ys = cell(np)
     for k=1:np
-        y = unite(s, ps.t[k],xs.t[k])
+        y = unite_step(s, ps.t[k],xs.t[k])
         if is(nonematch,y);  return nonematch;  end
         ys[k] = y
     end
