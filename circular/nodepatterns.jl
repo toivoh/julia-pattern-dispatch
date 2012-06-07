@@ -68,6 +68,12 @@ get_tree(p::TreeNode) = p.tree
 get_tree(p::BareNode) = anything
 
 
+eqpat(p::MaybePattern, x::MaybePattern) = is_egal(p,x)  # fallback
+function eqpat(p::TreeNode, x::TreeNode) 
+    eqpat(p.simple_name, x.simple_name) && eqpat(p.tree, x.tree)
+end
+
+
 ## DelayedTree ##
 
 type DelayedTree <: TreePattern
@@ -251,4 +257,9 @@ end
 
 function map_nodes(f::Function, p::TuplePattern) 
     TuplePattern(map(x->map_nodes(f,x), p.t))
+end
+
+
+function eqpat(p::TuplePattern, x::TuplePattern)
+    (length(p.t) == length(x.t)) && all(map(eqpat, p.t,x.t))
 end
