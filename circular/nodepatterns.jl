@@ -4,7 +4,7 @@ req("pretty/pretty.jl")
 req("circular/utils.jl")
 
 
-is_egal(x,y) = is(x,y)
+egal(x,y) = is(x,y)
 
 
 
@@ -45,7 +45,7 @@ show_sig(io::IO, p::TreeNode) = print_sig(io, p.simple_name, "~", p.tree)
 type Atom{T} <: BareNode
     value::T
 end
-is_egal{T}(x::Atom{T},y::Atom{T}) = is_egal(x.value,y.value)
+egal{T}(x::Atom{T},y::Atom{T}) = egal(x.value,y.value)
 
 show(io::IO, p::Atom) = pprint(io, enclose("Atom(", PNest(show, p.value), ")"))
 show_sig(io::IO, p::Atom) = print(io, p.value)
@@ -68,7 +68,7 @@ get_tree(p::TreeNode) = p.tree
 get_tree(p::BareNode) = anything
 
 
-eqpat(p::MaybePattern, x::MaybePattern) = is_egal(p,x)  # fallback
+eqpat(p::MaybePattern, x::MaybePattern) = egal(p,x)  # fallback
 function eqpat(p::TreeNode, x::TreeNode) 
     eqpat(p.simple_name, x.simple_name) && eqpat(p.tree, x.tree)
 end
@@ -121,7 +121,7 @@ end
 
 function assign(s::Subs, x::PNode, p::PNode)
     @expect !has(s.dict, p)
-    if is_egal(x,p)
+    if egal(x,p)
         del(s.dict, p)
     else
         s.dict[p] = x
@@ -171,7 +171,7 @@ end
 
 function unite_step(s::Subs, p::PNode, x::PNode)
     p, x = lookup(s,p), lookup(s,x)
-    if is_egal(p,x);  return x;  end
+    if egal(p,x);  return x;  end
     
     y = unify(s, p,x)
     if is(y,nonematch);  return nonematch;  end
@@ -211,7 +211,7 @@ function unify(s::Subs, p::PNode,x::PNode)
 end
 
 unify(s::Subs, p::PVar,x::BareNode) = x
-unify(s::Subs, p::Atom,x::Atom) = is_egal(p,x) ? x : (not_pgex!(s); nonematch)
+unify(s::Subs, p::Atom,x::Atom) = egal(p,x) ? x : (not_pgex!(s); nonematch)
 
 #unify(s::Subs, p::Atom,x::PVar) = unify(not_pgex!(s), x,p)
 unify(s::Subs, p::Atom,x::PVar) = (not_pgex!(s); unify(s, x,p))
