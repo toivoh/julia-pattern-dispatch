@@ -9,15 +9,18 @@ is_egal(x,y) = is(x,y)
 
 
 abstract MaybePattern
-type       NonePattern <: MaybePattern;  end
+type       NoneMatch   <: MaybePattern;  end
 abstract   Pattern     <: MaybePattern
 abstract     TreePattern <: Pattern
+type           Anything    <: TreePattern;  end
 abstract     PNode       <: Pattern
 abstract       BareNode    <: PNode
 
-const nonematch = NonePattern()
+const nonematch = NoneMatch()
+const anything  = Anything()
 
-show(io::IO, ::NonePattern) = print(io, "nonematch")
+show(io::IO, ::NoneMatch) = print(io, "nonematch")
+show(io::IO, ::Anything)  = print(io, "anything")
 
 show_sig(io::IO, x) = show(io, x)
 show_sig(x) = show_sig(OUTPUT_STREAM, x)
@@ -33,7 +36,7 @@ type TreeNode <: PNode
     tree::TreePattern
 end
 
-treenode(::NonePattern, ::TreePattern) = nonematch
+treenode(::NoneMatch, ::TreePattern) = nonematch
 treenode(simple_name::BareNode, tree::TreePattern) = TreeNode(simple_name,tree)
 
 show_sig(io::IO, p::TreeNode) = print_sig(io, p.simple_name, "~", p.tree)
@@ -58,10 +61,19 @@ function show(io::IO, p::PVar)
 end
 show_sig(io::IO, p::PVar) = print(io, p.name)
 
+
+get_simple_name(p::TreeNode) = p.simple_name
+get_simple_name(p::BareNode) = p
+get_tree(p::TreeNode) = p.tree
+get_tree(p::BareNode) = anything
+
+
+## DelayedTree ##
+
 type DelayedTree <: TreePattern
     p::TreePattern
     x::TreePattern
-    result::Union(TreePattern,NonePattern, Nothing)
+    result::Union(TreePattern,NoneMatch, Nothing)
     
     DelayedTree(p::TreePattern, x::TreePattern) = new(p, x, nothing)
 end
@@ -99,7 +111,9 @@ end
 
 function assign(s::Subs, x::PNode, p::PNode)
     @expect !has(s.dict, p)
-    if !is_egal(x,p)
+    if is_egal(x,p)
+        del(s.dict, p)
+    else
         s.dict[p] = x
     end
 end
@@ -151,7 +165,7 @@ function unite(s::Subs, p::PNode, x::PNode)
     s[p] = s[x] = y    
 end
 
-make_node_tree(s::Subs, ::NonePattern) = nonematch
+make_node_tree(s::Subs, ::NoneMatch) = nonematch
 make_node_tree(s::Subs, p::PNode) = make_node_tree(s,Set{TreeNode}(), p)
 function make_node_tree(s::Subs,nodes::Set{TreeNode}, p::PNode)
     p=lookup(s,p)
@@ -173,21 +187,13 @@ end
 
 # -- unify --------------------------------------------------------------------
 
-function unify(s::Subs, p::TreeNode,x::TreeNode)
-    treenode(unify(s, p.simple_name,x.simple_name),
-        delayed_unify(s, p.tree,x.tree))
+@unimplemented unify(s::Subs, p::BareNode,x::BareNode)
+function unify(s::Subs, p::PNode,x::PNode)
+    treenode(
+        unify(s, get_simple_name(p),get_simple_name(x)),
+        delayed_unify(s, get_tree(p),get_tree(x))
+    )
 end
-
-function unify(s::Subs, p::BareNode,x::TreeNode)    
-#    treenode(unify(s, p,x.simple_name), x.tree)
-    simple_name = unify(s, p,x.simple_name)
-    if is_egal(simple_name, x.simple_name);  x
-    else;                                    treenode(simple_name, x.tree)
-    end
-end
-# NB! Assumes that any tree is more specific than no tree:
-unify(s::Subs, p::TreeNode,x::BareNode) = unify(not_pgex!(s), x,p)
-
 
 unify(s::Subs, p::PVar,x::BareNode) = x
 unify(s::Subs, p::Atom,x::Atom) = is_egal(p,x) ? x : (not_pgex!(s); nonematch)
@@ -198,9 +204,15 @@ unify(s::Subs, p::Atom,x::PVar) = (not_pgex!(s); unify(s, x,p))
 
 # -- TreePatterns -------------------------------------------------------------
 
+unify(s::Subs, ::Anything,p::TreePattern) = p
+
+
 type TuplePattern <: TreePattern
     t::(Pattern...)
 end
+
+# all TupplePatterns are more specific than ::Anything
+unify(s::Subs, ps::TuplePattern,::Anything) = (not_pgex!(s); ps)
 
 function unify(s::Subs, ps::TuplePattern,xs::TuplePattern)
     np, nx = length(ps.t), length(xs.t)
