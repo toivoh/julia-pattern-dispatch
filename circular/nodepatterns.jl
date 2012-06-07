@@ -124,6 +124,8 @@ function show_sig(io::IO, s::Subs)
     print(io, "}", s.delay_queue, ")")
 end
 
+map_nodes(f::Function, p::PNode) = f(p)
+
 
 # -- unite --------------------------------------------------------------------
 
@@ -141,7 +143,8 @@ function unite(p::PNode, x::PNode)
         d.result = y
         d.owner.tree = y  # update owner
     end
-    y, s  # todo: apply all substitutions
+    y = make_node_tree(s,y)
+    y, s
 end
 
 function unite(s::Subs, p::PNode, x::PNode)
@@ -152,6 +155,26 @@ function unite(s::Subs, p::PNode, x::PNode)
     if is(y,nonematch);  return nonematch;  end
     s[p] = s[x] = y    
 end
+
+make_node_tree(s::Subs, ::NonePattern) = nonematch
+make_node_tree(s::Subs, p::PNode) = make_node_tree(s,Set{TreeNode}(), p)
+function make_node_tree(s::Subs,nodes::Set{TreeNode}, p::PNode)
+    p=lookup(s,p)
+    if isa(p,BareNode)
+        return p
+    elseif isa(p,TreeNode)
+        if has(nodes,p)
+            return p.simple_name
+        else
+            add(nodes, p)
+            return treenode(p.simple_name, 
+                            map_nodes(p->make_node_tree(s,nodes,p), p.tree))
+        end
+    else
+        error("unexpected!")
+    end
+end
+
 
 # -- unify --------------------------------------------------------------------
 
@@ -206,4 +229,8 @@ function show_sig(io::IO, ps::TuplePattern)
         print_sig(io, p, ",")
     end
     print(io, ")")
+end
+
+function map_nodes(f::Function, p::TuplePattern) 
+    TuplePattern(map(x->map_nodes(f,x), p.t))
 end

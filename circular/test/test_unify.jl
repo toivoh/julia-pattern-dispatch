@@ -4,7 +4,7 @@ req("circular/nodepatterns.jl")
 req("pretty/pretty.jl")
 req("circular/test/utils.jl")
 
-X, Y, Z = map(PVar, (:X, :Y, :Z))
+X, Y, Z, W = map(PVar, (:X, :Y, :Z, :W))
 
 function test_unite(p, x)
     y, s = unite(p, x)
@@ -20,7 +20,8 @@ test_unite_pairs = {
     (X, X), (X, Y), (X, Atom(1)), (Atom(1), Atom(1)), (Atom(1), Atom(5)),
     (X, TreeNode(Z, TuplePattern((Y, Atom(1))))),
     (TreeNode(X, TuplePattern((Y, Atom(1)))),
-     TreeNode(Z, TuplePattern((Atom(5), Atom(1)))))
+     TreeNode(Z, TuplePattern((Atom(5), Atom(1))))),
+    (X, TreeNode(Y, TuplePattern((Atom(1), X))))
 }
 
 
