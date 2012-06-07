@@ -2,18 +2,22 @@
 load("pattern/req.jl")
 req("circular/nodepatterns.jl")
 
-
+typealias RPCVars Dict{Symbol,PVar}
 type RPContext
-    vars::Dict{Symbol,PVar}
+    vars::RPCVars
     s::Subs
-    RPContext() = new(Dict{Symbol,PVar}(), Subs())
+    RPContext(vars::RPCVars) = new(vars, Subs())
 end
+RPContext() = RPContext(RPCVars())
+
 getvar(c::RPContext, name::Symbol) = (@setdefault c.vars[name] = PVar(name))
 
 
-function recode_patex(ex)
-    c = RPContext()
-    recode_patex(c, ex)
+recode_patex(ex) = recode_patex(RPCVars(), ex)
+function recode_patex(vars::RPCVars, ex)
+    c = RPContext(vars)
+    rex = recode_patex(c, ex)
+    :(normalized_pattern(($quot(c.s)), ($rex)))
 end
 
 recode_patex(c::RPContext, xs::Vector) = {recode_patex(c,x) for x in xs}
@@ -44,11 +48,10 @@ end
 
 function code_pattern(args...)
     c = RPContext()
-    args = recode_patex(c, {args...})
+    args = {recode_patex(c.vars, arg) for arg in args}
     if length(args) == 1
-        #args[1]
-        :(make_node_tree(($quot(c.s)), ($args[1])))
+        args[1]
     else
-        :(make_node_tree(($quot(c.s)), tuple($args...)))
+        :(tuple($args...))
     end
 end

@@ -165,7 +165,7 @@ function unite_ps(s::Subs, p::PNode, x::PNode)
 
         d.result = y
     end
-    y = make_node_tree(s,y)
+    y = normalized_pattern(s,y)
     y, s
 end
 
@@ -178,11 +178,11 @@ function unite_step(s::Subs, p::PNode, x::PNode)
     s[p] = s[x] = y    
 end
 
-make_node_tree(s::Subs, ps::Tuple) = map(p->(make_node_tree(s,p)), ps)
+normalized_pattern(s::Subs, ps::Tuple) = map(p->(normalized_pattern(s,p)), ps)
 
-make_node_tree(s::Subs, ::NoneMatch) = nonematch
-make_node_tree(s::Subs, p::PNode) = make_node_tree(s,Set{TreeNode}(), p)
-function make_node_tree(s::Subs,nodes::Set{TreeNode}, p::PNode)
+normalized_pattern(s::Subs, ::NoneMatch) = nonematch
+normalized_pattern(s::Subs, p::PNode) = normalized_pattern(s,Set{TreeNode}(),p)
+function normalized_pattern(s::Subs,nodes::Set{TreeNode}, p::PNode)
     p=lookup(s,p)
     if isa(p,BareNode)
         return p
@@ -192,7 +192,7 @@ function make_node_tree(s::Subs,nodes::Set{TreeNode}, p::PNode)
         else
             add(nodes, p)
             return treenode(p.simple_name, 
-                            map_nodes(p->make_node_tree(s,nodes,p), p.tree))
+                            map_nodes(p->normalized_pattern(s,nodes,p),p.tree))
         end
     else
         error("unexpected!")
