@@ -33,18 +33,8 @@ type TreeNode <: PNode
     tree::TreePattern
 end
 
-# treenode(simple_name, tree): create a TreeNode
-# Takes ownership of tree if it's a DelayedTree
 treenode(::NonePattern, ::TreePattern) = nonematch
-function treenode(simple_name::BareNode, tree::TreePattern) 
-    node = TreeNode(simple_name,tree)
-    if isa(tree, DelayedTree)
-        # take over ownership of the delayed tree 
-        # ==> updates node when it has been formed
-        tree.owner = node
-    end
-    node
-end
+treenode(simple_name::BareNode, tree::TreePattern) = TreeNode(simple_name,tree)
 
 show_sig(io::IO, p::TreeNode) = print_sig(io, p.simple_name, "~", p.tree)
 
@@ -72,13 +62,21 @@ type DelayedTree <: TreePattern
     p::TreePattern
     x::TreePattern
     result::Union(TreePattern,NonePattern, Nothing)
-    owner::TreeNode
     
     DelayedTree(p::TreePattern, x::TreePattern) = new(p, x, nothing)
 end
 
 undelayed(p::DelayedTree) = p.result::TreePattern
 undelayed(p::TreePattern) = p
+
+function undelayed(p::TreeNode) 
+    isa(p.tree, DelayedTree) ? treenode(p.simple_name, p.tree.result) : p
+end
+undelayed(p::BareNode) = p
+
+
+map_nodes(f::Function, p::PNode) = f(p)
+map_nodes(f::Function, p::DelayedTree) = map_nodes(f, p.result)
 
 
 # -- Subs ---------------------------------------------------------------------
@@ -117,14 +115,12 @@ function show_sig(io::IO, s::Subs)
     print(io, "Subs(", (s.disproved_p_ge_x ? "  " : ">="), ", {")
     let io=indented(io)
         for (k,v) in s.dict
-            print(io, "\n", psig(k), " => ", psig(v), ", ")
+            print(io, "\n", psig(k), " => ", psig(undelayed(v)), ", ")
         end
     end
     if !isempty(s.dict);  print(io, "\n");  end
     print(io, "}", s.delay_queue, ")")
 end
-
-map_nodes(f::Function, p::PNode) = f(p)
 
 
 # -- unite --------------------------------------------------------------------
@@ -141,7 +137,6 @@ function unite(p::PNode, x::PNode)
         if is(y,nonematch);  return nonematch;  end
 
         d.result = y
-        d.owner.tree = y  # update owner
     end
     y = make_node_tree(s,y)
     y, s
