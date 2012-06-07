@@ -5,7 +5,7 @@ req("circular/utils.jl")
 
 
 egal(x,y) = is(x,y)
-
+egal(x::Tuple, y::Tuple) = (length(x) == length(y)) && all(map(egal, x,y))
 
 
 abstract MaybePattern
@@ -68,9 +68,8 @@ get_tree(p::TreeNode) = p.tree
 get_tree(p::BareNode) = anything
 
 
-eqpat(p::MaybePattern, x::MaybePattern) = egal(p,x)  # fallback
-function eqpat(p::TreeNode, x::TreeNode) 
-    eqpat(p.simple_name, x.simple_name) && eqpat(p.tree, x.tree)
+function egal(p::TreeNode, x::TreeNode) 
+    egal(p.simple_name, x.simple_name) && egal(p.tree, x.tree)
 end
 
 
@@ -260,6 +259,6 @@ function map_nodes(f::Function, p::TuplePattern)
 end
 
 
-function eqpat(p::TuplePattern, x::TuplePattern)
-    (length(p.t) == length(x.t)) && all(map(eqpat, p.t,x.t))
+function egal(p::TuplePattern, x::TuplePattern)
+    (length(p.t) == length(x.t)) && egal(p.t,x.t)
 end
