@@ -47,7 +47,7 @@ type Atom{T} <: BareNode
 end
 is_egal{T}(x::Atom{T},y::Atom{T}) = is_egal(x.value,y.value)
 
-show(io::IO, p::Atom) = pprint(io, enclose("Atom(", p.value, ")"))
+show(io::IO, p::Atom) = pprint(io, enclose("Atom(", PNest(show, p.value), ")"))
 show_sig(io::IO, p::Atom) = print(io, p.value)
 
 type PVar <: BareNode
@@ -89,6 +89,9 @@ undelayed(p::BareNode) = p
 
 map_nodes(f::Function, p::PNode) = f(p)
 map_nodes(f::Function, p::DelayedTree) = map_nodes(f, p.result)
+
+as_pnode(p::TreePattern) = treenode(PVar(gensym(),true), p)
+as_pnode(p::MaybePattern) = p
 
 
 # -- Subs ---------------------------------------------------------------------
@@ -139,7 +142,8 @@ end
 
 # -- unite --------------------------------------------------------------------
 
-function unite(p::PNode, x::PNode)
+unite(p::PNode, x::PNode) = unite_ps(p,x)[1]
+function unite_ps(p::PNode, x::PNode)
     s = Subs()
     y = unite(s, p,x)
     while !isempty(s.delay_queue)
@@ -200,6 +204,8 @@ unify(s::Subs, p::Atom,x::Atom) = is_egal(p,x) ? x : (not_pgex!(s); nonematch)
 
 #unify(s::Subs, p::Atom,x::PVar) = unify(not_pgex!(s), x,p)
 unify(s::Subs, p::Atom,x::PVar) = (not_pgex!(s); unify(s, x,p))
+
+unify(s::Subs, p::PVar,x::PVar) = (x.istemp && !p.istemp) ? p : x
 
 
 # -- TreePatterns -------------------------------------------------------------
