@@ -2,6 +2,12 @@
 load("pattern/req.jl")
 req("circular/utils.jl")
 
+macro test(ex)
+    quote
+        @assert ($ex)
+    end
+end
+
 macro assert_fails(ex)
     @gensym err
     quote
