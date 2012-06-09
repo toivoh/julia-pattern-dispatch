@@ -1,8 +1,5 @@
 
-const doublecolon = @eval (:(::Int)).head
-
-quotevalue(val) = expr(:quote, val)
-quotedtuple(t)  = expr(:tuple, {t...})
+quot(value) = expr(:quote, value)
 
 is_expr(ex, head::Symbol) = (isa(ex, Expr) && (ex.head == head))
 function is_expr(ex, head::Symbol, nargs::Int)
@@ -15,55 +12,27 @@ macro expect(pred)
     end
 end
 
-macro assert_fails(ex)
-    @gensym err
+macro unimplemented(signature)
+    @expect is_expr(signature, :call)
     quote
-        ($err) = nothing
-        try
-            ($ex)
-            error("should fail, but didn't: ", ($quotevalue(ex)) )
-        catch err
-            ($err) = err
+        ($signature) = error("Unimplemented! Todo: print arg types")
+    end
+end
+
+# macro setdefault(args...)
+macro setdefault(ex)
+    @expect is_expr(ex, :(=))
+    ref_ex, default_ex = tuple(ex.args...)
+    @expect is_expr(ref_ex, :ref)
+    dict_ex, key_ex = tuple(ref_ex.args...)
+    @gensym dict key #defval
+    quote
+        ($dict)::Associative = ($dict_ex)
+        ($key) = ($key_ex)
+        if has(($dict), ($key))
+            ($dict)[($key)]
+        else
+            ($dict)[($key)] = ($default_ex) # returns the newly inserted value
         end
-        ($err)
-    end
-end
-
-
-macro pshow(ex)
-    :(pprintln(($string(ex)), "\t= ", ($ex)) )
-end
-macro pshowln(ex)
-    :(pprintln(($string(ex)), " =\n", ($ex)) )
-end
-
-macro show(ex)
-    :(println(($string(ex)), "\t= ", sshow($ex)) )
-end
-macro showln(ex)
-    :(println(($string(ex)), "\n\t=", sshow($ex)) )
-end
-
-# todo: pull these two together!
-macro symshow(call)
-    @expect is_expr(call, :call)
-    args = call.args
-    @expect length(args)==3
-    op, x, y = tuple(args...)
-    quote
-        print($string(call))
-        print("\t= ",    ($call))
-        println(",\tsym = ", ($op)($y,$x))
-    end
-end
-macro symshowln(call)
-    @expect is_expr(call, :call)
-    args = call.args
-    @expect length(args)==3
-    op, x, y = tuple(args...)
-    quote
-        println($string(call))
-        println("\t= ",    ($call))
-        println("sym\t= ", ($op)($y,$x))
     end
 end
