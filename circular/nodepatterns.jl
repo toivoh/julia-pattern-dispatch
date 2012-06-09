@@ -22,6 +22,9 @@ const anything  = Anything()
 show(io::IO, ::NoneMatch) = print(io, "nonematch")
 show(io::IO, ::Anything)  = print(io, "anything")
 
+show_sig(io::IO, p::Union(NoneMatch,Anything)) = print(io, "pat(", p, ")")
+
+
 show_sig(io::IO, x) = show(io, x)
 show_sig(x) = show_sig(OUTPUT_STREAM, x)
 print_sig(io::IO, args...) = foreach(arg->print_sig(io, arg), args)
@@ -83,13 +86,22 @@ type DelayedTree <: TreePattern
     DelayedTree(p::TreePattern, x::TreePattern) = new(p, x, nothing)
 end
 
-undelayed(p::DelayedTree) = p.result::TreePattern
+undelayed(p::DelayedTree) = p.result::Union(TreePattern,NoneMatch)
 undelayed(p::TreePattern) = p
 
+function undelay(p::TreeNode)
+    if isa(p.tree, DelayedTree) && !is(p.tree.result, nothing)
+        p.tree = p.tree.result
+    end
+    p
+end
+undelay(p::BareNode) = p
+
+undelayed(p::BareNode) = p
 function undelayed(p::TreeNode) 
     isa(p.tree, DelayedTree) ? treenode(p.simple_name, p.tree.result) : p
 end
-undelayed(p::BareNode) = p
+
 
 
 map_nodes(f::Function, p::PNode) = f(p)
@@ -113,7 +125,7 @@ end
 not_pgex!(s::Subs) = (s.disproved_p_ge_x = true; s)
 
 function lookup(s::Subs, p::PNode)
-    if !has(s.dict, p);  p
+    if !has(s.dict, p);  undelay(p)
     else;                s.dict[p] = lookup(s, s.dict[p])        
     end
 end
@@ -138,7 +150,7 @@ function show_sig(io::IO, s::Subs)
     print(io, "Subs(", (s.disproved_p_ge_x ? "  " : ">="), ", {")
     let io=indented(io)
         for (k,v) in s.dict
-            print(io, "\n", psig(k), " => ", psig(undelayed(v)), ", ")
+            print(io, "\n", psig(k), " => ", psig(undelay(v)), ", ")
         end
     end
     if !isempty(s.dict);  print(io, "\n");  end
@@ -177,19 +189,19 @@ function unite_step(s::Subs, p::PNode, x::PNode)
     s[p] = s[x] = y    
 end
 
-normalized_pattern(s::Subs, ps::Tuple) = map(p->(normalized_pattern(s,p)), ps)
+#normalized_pattern(s::Subs, ps::Tuple) = map(p->(normalized_pattern(s,p)), ps)
 
 normalized_pattern(s::Subs, ::NoneMatch) = nonematch
-normalized_pattern(s::Subs, p::PNode) = normalized_pattern(s,Set{TreeNode}(),p)
-function normalized_pattern(s::Subs,nodes::Set{TreeNode}, p::PNode)
+normalized_pattern(s::Subs, p::PNode) = normalized_pattern(s,Set{BareNode}(),p)
+function normalized_pattern(s::Subs,nodes::Set{BareNode}, p::PNode)
     p=lookup(s,p)
     if isa(p,BareNode)
         return p
     elseif isa(p,TreeNode)
-        if has(nodes,p)
+        if has(nodes, p.simple_name)
             return p.simple_name
         else
-            add(nodes, p)
+            add(nodes, p.simple_name)
             return treenode(p.simple_name, 
                             map_nodes(p->normalized_pattern(s,nodes,p),p.tree))
         end
