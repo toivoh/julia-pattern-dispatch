@@ -34,6 +34,7 @@ print_sig(args...) = print_sig(OUTPUT_STREAM, args...)
 
 psig(args...) = PNest(print_sig, args...)
 
+
 type TreeNode <: PNode
     simple_name::BareNode
     tree::TreePattern
@@ -273,4 +274,71 @@ end
 
 function egal(p::TuplePattern, x::TuplePattern)
     (length(p.t) == length(x.t)) && egal(p.t,x.t)
+end
+
+
+# -- code_match ---------------------------------------------------------------
+
+type MatchingCode
+    assigned_vars::Set{PVar}
+    code::Vector
+
+    MatchingCode() = new(Set{PVar}(), {})
+end
+
+is_bound(c::MatchingCode, p::Atom) = true
+is_bound(c::MatchingCode, p::PVar) = has(c.assigned_vars, p)
+
+emit(c::MatchingCode, ex) = (push(c.code, ex); nothing)
+
+function emit_predicate(c::MatchingCode, pred) 
+    emit(c, :(  
+        if !($pred)
+            return false
+        end  
+    ))
+end
+
+function emit_bind(c::MatchingCode, var::PVar, ex)
+    @expect !has(c.assigned_vars, var)
+    add(c.assigned_vars, var)
+    sym::Symbol = code_value(var)
+    emit(c, :( ($sym)=($ex) ))
+    sym
+end
+
+
+function code_match(p::PNode,xname::Symbol)
+    c = MatchingCode()
+    code_match(c, p,xname)
+    expr(:block, c.code)
+end
+
+
+code_value(p::Atom) = quot(p.value)
+code_value(p::PVar) = p.name
+
+function code_match(c::MatchingCode, p::BareNode, ex)
+    if is_bound(c, p)
+        emit_predicate(c, :( egal(($ex), ($code_value(p))) ))
+        false, nothing
+    else
+        sym::Symbol = emit_bind(c, p, ex)
+        true, sym
+    end
+end
+
+function code_match(c::MatchingCode, p::TreeNode, ex)
+    proceed, sym = code_match(c, p.simple_name, ex)
+    if proceed
+        code_match(c, p.tree, sym)
+    end
+end
+
+function code_match(c::MatchingCode, p::TuplePattern, ex)
+    np::Int = length(p.t)
+    emit_predicate(c, :( isa(($ex), Tuple) && (length($ex) == ($np)) ))
+    for k=1:np
+        code_match(c, p.t[k], :( ($ex)[$k] ))
+    end
 end
