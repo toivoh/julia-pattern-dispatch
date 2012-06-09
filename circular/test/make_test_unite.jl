@@ -6,7 +6,7 @@ req("pretty/pretty.jl")
 
 macro print_test(ex)
     quote
-        println("@test (", ($string(ex)), ") == ", sshow($ex))
+        println("@test (", ($sshow(ex)), ") == ", sshow($ex))
     end
 end
 
@@ -25,7 +25,7 @@ function print_unite_test(px::PNode,py::PNode)
     @print_test egal(px,pz)
     @print_test egal(py,pz)
     @print_test egal(px,py)
-    @print_test getfield(s,:disproved_p_ge_x)
+    @print_test s.disproved_p_ge_x
 end
 
 #create_unite_test((@pattern z x~(1,y))...)
