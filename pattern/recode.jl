@@ -1,6 +1,6 @@
 
 load("pattern/req.jl")
-req("circular/nodepatterns.jl")
+req("pattern/nodepatterns.jl")
 
 typealias RPCVars Dict{Symbol,PVar}
 type RPContext

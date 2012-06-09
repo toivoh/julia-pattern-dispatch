@@ -1,7 +1,7 @@
 
 load("pattern/req.jl")
+req("pattern/utils.jl")
 req("pretty/pretty.jl")
-req("circular/utils.jl")
 
 
 egal(x,y) = is(x,y)

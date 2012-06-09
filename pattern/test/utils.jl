@@ -1,6 +1,6 @@
 
 load("pattern/req.jl")
-req("circular/utils.jl")
+req("pattern/utils.jl")
 
 macro test(ex)
     quote

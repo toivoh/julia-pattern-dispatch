@@ -1,9 +1,9 @@
 
 load("pattern/req.jl")
-req("circular/nodepatterns.jl")
-req("circular/recode.jl")
+req("pattern/nodepatterns.jl")
+req("pattern/recode.jl")
+req("pattern/test/utils.jl")
 req("pretty/pretty.jl")
-req("circular/test/utils.jl")
 
 X, Y, Z, W = map(PVar, (:X, :Y, :Z, :W))
 

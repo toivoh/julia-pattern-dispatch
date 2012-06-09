@@ -1,6 +1,6 @@
 
 load("pattern/req.jl")
-req("circular/recode.jl")
+req("pattern/recode.jl")
 req("pretty/pretty.jl")
 
 
@@ -42,8 +42,8 @@ unite_test_pairs = {
 
 
 println("load(\"pattern/req.jl\")")
-println("req(\"circular/recode.jl\")")
-println("req(\"circular/test/utils.jl\")")
+println("req(\"pattern/recode.jl\")")
+println("req(\"pattern/test/utils.jl\")")
 println()
 
 for (p,x) in unite_test_pairs

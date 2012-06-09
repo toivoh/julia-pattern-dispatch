@@ -1,6 +1,6 @@
 load("pattern/req.jl")
-req("circular/recode.jl")
-req("circular/test/utils.jl")
+req("pattern/recode.jl")
+req("pattern/test/utils.jl")
 
 
 
