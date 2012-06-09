@@ -285,6 +285,7 @@ type MatchingCode
 
     MatchingCode() = new(Set{PVar}(), {})
 end
+get_varnames(c::MatchingCode) = {p.name for p in c.assigned_vars}
 
 is_bound(c::MatchingCode, p::Atom) = true
 is_bound(c::MatchingCode, p::PVar) = has(c.assigned_vars, p)
@@ -311,7 +312,7 @@ end
 function code_match(p::PNode,xname::Symbol)
     c = MatchingCode()
     code_match(c, p,xname)
-    expr(:block, c.code)
+    get_varnames(c), expr(:block, c.code)
 end
 
 

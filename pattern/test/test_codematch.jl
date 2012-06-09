@@ -5,9 +5,9 @@ req("pattern/test/utils.jl")
 
 
 function test_code_match(p::Pattern)
-    ex = code_match(p, :value)
-    print_sig("code_match(", p, ", :value) =")
-    println(indent("\n",ex))
+    vars, ex = code_match(p, :value)
+    print_sig("code_match(", p, ", :value)")
+    println(indent("\nvars = ",vars, "\ncode = ",ex))
     println()
 end
 
