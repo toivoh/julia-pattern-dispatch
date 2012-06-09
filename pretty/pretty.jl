@@ -252,7 +252,7 @@ function show(io::IO, ex::Expr)
             comma_list(args[2:end]...),
         parentypes[head][2]))
     elseif (head == :comparison) && (nargs>=3 && isodd(nargs)) # :comparison
-        pprint("(",indent(args),")")
+        pprint("(",indent(args...),")")
     elseif ((contains([:return, :abstract, :const] , head) && nargs==1) ||
             contains([:local, :global], head))
         print(io, string(head)*" ", indent(comma_list(args...)))
