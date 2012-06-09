@@ -5,6 +5,18 @@ macro expect(pred)
     end
 end
 
+is_expr(ex, head::Symbol) = (isa(ex, Expr) && (ex.head == head))
+function is_expr(ex, head::Symbol, nargs::Int)
+    is_expr(ex, head) && length(ex.args) == nargs
+end
+
+is_quoted(ex::QuoteNode) = true
+is_quoted(ex::Expr)      = is_expr(ex, :quote, 1)
+is_quoted(ex)            = false
+
+unquoted(ex::QuoteNode) = ex.value
+unquoted(ex::Expr)      = (@assert is_quoted(ex); ex.args[1])
+
 
 # -- PrettyIO -----------------------------------------------------------------
 
@@ -217,7 +229,7 @@ pshow_quoted_expr(io::PrettyIO, ex) = pprint(io, enclose(":(", ex, ")"))
 #function show(io::PrettyIO, ex::Expr)
 function show(io::IO, ex::Expr)
     io = pretty(io)
-    const infix = {:(=)=>"=", :(.)=>".", doublecolon=>"::", :(:)=>":",
+    const infix = {:(=)=>"=", doublecolon=>"::", :(:)=>":",
                    :(->)=>"->", :(=>)=>"=>",
                    :(&&)=>" && ", :(||)=>" || "}
     const parentypes = {:call=>("(",")"), :ref=>("[","]"), :curly=>("{","}")}
@@ -226,7 +238,13 @@ function show(io::IO, ex::Expr)
     args = ex.args
     nargs = length(args)
 
-    if has(infix, head) && nargs==2             # infix operations
+    if head == :(.)
+        print(io, '\x1f', indent(args[1], ".",
+            is_quoted(args[2]) ? unquoted(args[2]) : enclose("(", args[2], ")")
+#             is_expr(args[2], :quote, 1) ? 
+#             args[2].args[1] : enclose("(", args[2], ")")
+        ), '\x1f')
+    elseif has(infix, head) && nargs==2         # infix operations
 #        pprint(io, "(",indent(args[1], infix[head], args[2]),")")
         pprint(io, '\x1f', indent(args[1], infix[head], args[2]), '\x1f')
     elseif has(parentypes, head) && nargs >= 1  # :call/:ref/:curly
