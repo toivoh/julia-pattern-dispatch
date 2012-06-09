@@ -36,6 +36,20 @@ function recode_patex(c::RPContext, ex::Expr)
     elseif (head == :call) && (args[1] == :~) && (nargs == 3)
         recoded_args = recode_patex(c,args)
         return :(unite(($quot(c.s)), ($recoded_args[2]),($recoded_args[3])))
+    elseif contains([:call, :ref, :curly], head)
+        if head == :call
+            if args[1] == :pat
+                @expect nargs==2
+                return args[2]
+            end
+            if args[1] == :atom
+                @expect nargs==2
+                return :(Atom($args[2]))
+            end
+        end
+
+        recoded_args = {args[1], recode_patex(c,args[2:end])...}
+        return expr(head, recode_patex(c,args))
     else
         return expr(head, recode_patex(c,args))
     end    
