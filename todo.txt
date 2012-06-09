@@ -1,0 +1,27 @@
+
+Write more tests
+  o unify
+    o pattern_ge
+  o ifmatch
+
+Adapt/import
+  o pdispatch
+
+Refactor
+  o Consider how to organize and divide nodepatterns.jl
+
+Add
+  o VectorPattern
+    ==> test  - circular patterns and values
+              - identity vs VectorPattern conformance
+
+Minor:
+  o Allow multiple let arguments to @ifmatch let
+
+
+Bigger picture:
+  o get @ifmatch and pdispatch to work with TupplePattern and VectorPattern
+  ==> start on
+    o questionaire system for more diverse patterns
+    o generation of merged dispatch code
+
