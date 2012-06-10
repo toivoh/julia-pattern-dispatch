@@ -280,10 +280,11 @@ end
 # -- code_match ---------------------------------------------------------------
 
 type MatchingCode
+    nomatch_ret  # expr to be returned if match fails
     assigned_vars::Set{PVar}
     code::Vector
 
-    MatchingCode() = new(Set{PVar}(), {})
+    MatchingCode(nomatch_ret) = new(nomatch_ret, Set{PVar}(), {})
 end
 get_varnames(c::MatchingCode) = {p.name for p in c.assigned_vars}
 
@@ -295,7 +296,7 @@ emit(c::MatchingCode, ex) = (push(c.code, ex); nothing)
 function emit_predicate(c::MatchingCode, pred) 
     emit(c, :(  
         if !($pred)
-            return false
+            return ($c.nomatch_ret)
         end  
     ))
 end
@@ -309,8 +310,9 @@ function emit_bind(c::MatchingCode, var::PVar, ex)
 end
 
 
-function code_match(p::PNode,xname::Symbol)
-    c = MatchingCode()
+code_match(p::PNode,xname::Symbol) = code_match(p,xname, :false)
+function code_match(p::PNode,xname::Symbol, nomatch_ret)
+    c = MatchingCode(nomatch_ret)
     code_match(c, p,xname)
     get_varnames(c), expr(:block, c.code)
 end
