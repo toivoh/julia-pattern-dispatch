@@ -245,14 +245,14 @@ function show(io::IO, ex::Expr)
 #             args[2].args[1] : enclose("(", args[2], ")")
         ), '\x1f')
     elseif has(infix, head) && nargs==2         # infix operations
-#        pprint(io, "(",indent(args[1], infix[head], args[2]),")")
-        pprint(io, '\x1f', indent(args[1], infix[head], args[2]), '\x1f')
+#        print(io, "(",indent(args[1], infix[head], args[2]),")")
+        print(io, '\x1f', indent(args[1], infix[head], args[2]), '\x1f')
     elseif has(parentypes, head) && nargs >= 1  # :call/:ref/:curly
         print(io, args[1], enclose(parentypes[head][1], 
             comma_list(args[2:end]...),
         parentypes[head][2]))
     elseif (head == :comparison) && (nargs>=3 && isodd(nargs)) # :comparison
-        pprint("(",indent(args...),")")
+        print(io, "(",indent(args...),")")
     elseif ((contains([:return, :abstract, :const] , head) && nargs==1) ||
             contains([:local, :global], head))
         print(io, string(head)*" ", indent(comma_list(args...)))
@@ -269,31 +269,31 @@ function show(io::IO, ex::Expr)
 #               linecomment = "line "*string(args[1])*", "*string(args[2])*": "
                 linecomment = string(args[2])*", line "*string(args[1])*": "
             end
-            pprint(io, "\t#  ", linecomment)
+            print(io, "\t#  ", linecomment)
 #             if str_fits_on_line(io, strlen(linecomment)+13)
-#                 pprint(io, "\t#  ", linecomment)
+#                 print(io, "\t#  ", linecomment)
 #             else
-#                 pprint(io, "\n", linecomment)
+#                 print(io, "\n", linecomment)
 #             end
         end
     elseif head == :if && nargs == 3  # if/else
-        pprint(io, 
+        print(io, 
             "if ", nest_body(args[1], args[2]),
             "\nelse ", nest_body(args[3]),
             "\nend")
     elseif head == :try && nargs == 3 # try[/catch]
-        pprint(io, "try ", nest_body(args[1]))
+        print(io, "try ", nest_body(args[1]))
         if !(is(args[2], false) && is_expr(args[3], :block, 0))
-            pprint(io, "\ncatch ", nest_body(args[2], args[3]))
+            print(io, "\ncatch ", nest_body(args[2], args[3]))
         end
-        pprint(io, "\nend")
+        print(io, "\nend")
     elseif head == :let               # :let 
-        pprint(io, "let ", 
+        print(io, "let ", 
             nest_body(args[2:end], args[1]), "\nend")
     elseif head == :block
-        pprint(io, "begin ", nest_body(ex), "\nend")
+        print(io, "begin ", nest_body(ex), "\nend")
     elseif contains([:for, :while, :function, :if, :type], head) && nargs == 2
-        pprint(io, string(head), " ", 
+        print(io, string(head), " ", 
             nest_body(args[1], args[2]), "\nend")
     else
         print(io, head, enclose("(", comma_list(args...), ")"))
