@@ -180,34 +180,41 @@ function unite_ps(s::Subs, p::PNode, x::PNode)
     y, s
 end
 
-self_unify(s::Subs, p::BareNode) = p
-function self_unify(s::Subs, p::TreeNode)    
-    @expect egal(p, lookup(s,p))
-    pname = p.simple_name    
-    if has(s.dict, pname)
-        x = lookup(s, pname)
-        if egal(p, x)
-            return p
-        else
-            return unify(s, p,x)
-        end
+self_unite(s::Subs, p::BareNode) = p
+function self_unite(s::Subs, p::TreeNode)
+    pname = p.simple_name
+    x = lookup(s, pname)
+    if egal(lookup(s,p), x);  return x;  end
+    
+    if egal(x,pname)
+        s[x] = p
     else
-        s.dict[pname] = p
-        return p
+        # p is unbound in s, as is x
+        raw_unite_step(s, p,x)    
     end
 end
 
+
 function unite_step(s::Subs, p::PNode, x::PNode)
+    p, x = self_unite(s,p), self_unite(s,x)
     p, x = lookup(s,p), lookup(s,x)
+
+    raw_unite_step(s, p,x)
+end
+
+# assumes p and x are unbound in s
+function raw_unite_step(s::Subs, p::PNode, x::PNode)
+    @assert !has(s.dict, p)
+    @assert !has(s.dict, x)
+
     if egal(p,x);  return x;  end
-    
-    p, x = self_unify(s, p), self_unify(s, x)
     
     y = unify(s, p,x)
     if is(y,nonematch);  return nonematch;  end
     s[p] = s[x] = y
     get_simple_name(y)
 end
+
 
 #normalized_pattern(s::Subs, ps::Tuple) = map(p->(normalized_pattern(s,p)), ps)
 
