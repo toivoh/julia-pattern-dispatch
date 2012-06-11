@@ -16,3 +16,9 @@ for x=0:5
     end
     @test r2 == (true, x)
 end
+
+mt = PatternMethodTable(:f)
+add(mt, m1)
+add(mt, m2)
+
+@test {dispatch(mt,(x,)) for x=0:4} == {0,42,2,3,4}
