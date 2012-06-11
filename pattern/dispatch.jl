@@ -54,3 +54,97 @@ function code_patmethod(fdef)
     # evaluates the signature expression inline
     :( patmethod(($signature_ex), ($quot(body))) )
 end
+
+
+# -- PatternMethodTable -------------------------------------------------------
+
+type PatternMethodTable
+    fname::Symbol
+    methods::Vector{PatternMethod}
+
+    PatternMethodTable(fname::Symbol) = new(fname, PatternMethod[])
+end
+
+#add(mt::PatternMethodTable, m::PatternMethod) = push(mt.methods, m)
+function add(mt::PatternMethodTable, m::PatternMethod)    
+    ms = mt.methods
+    n = length(ms)
+
+    # insert the pattern in ascending topological order, as late as possible
+    i = n+1
+    for k=1:n
+        if pat_le(m.signature, ms[k].signature)
+            if pat_ge(m.signature, ms[k].signature)
+                # equal signature ==> replace
+                mt.methods[k] = m
+                return
+            else
+                i = k
+                break
+            end
+        end
+    end
+
+    ms = mt.methods = PatternMethod[ms[1:i-1]..., m, ms[i:n]...]
+
+    # warn if new signature is ambiguous with an old one
+    for m0 in ms
+        lb, s = unite(m0.signature, m.signature)
+        if !(is(lb,nonematch) || any({pat_eq(lb,mk.signature) for mk in ms}))
+            # todo: 
+            #   o disambiguate pvars in lb (might have same name)
+            print("Warning: New @pattern method ", mt.fname)
+            show_sig(m.signature); println()
+            print("         is ambiguous with   ", mt.fname)
+            show_sig(m0.signature); println()
+            print("         Make sure           ", mt.fname) 
+            show_sig(lb)
+            println(" is defined first.")
+        end
+    end
+
+    nothing
+end
+
+
+function dispatch(mt::PatternMethodTable, args::Tuple)
+    for m in mt.methods
+        matched, result = m.dispfun(args...)
+        if matched;  return result;  end
+    end
+    error("no dispatch found for pattern function $(mt.fname)$args")
+end
+
+
+const __patmethod_tables = Dict{Function,PatternMethodTable}()
+
+# macro pattern(fdef)
+#     code_pattern_fdef(fdef)
+# end
+function code_pattern_fdef(fdef)
+    method_ex = code_patmethod(fdef)
+
+    sig, body = split_fdef(fdef)
+    fname = sig.args[1]
+    qfname = quot(fname)
+    @gensym fun mtable
+    quote
+        ($fun) = nothing
+        try
+            ($fun) = ($fname)
+        end
+        if is(($fun), nothing)
+            ($mtable) = PatternMethodTable($qfname)
+#            const ($fname) = create_pattern_function(($mtable))
+            const ($fname) = (args...)->dispatch(($mtable), args)
+            __patmethod_tables[$fname] = ($mtable)
+        else
+            if !(isa(($fun),Function) && has(__patmethod_tables, ($fun)))
+                error("\nin @pattern method definition: ", ($string(fname)), 
+                " is not a pattern function")
+            end
+            ($mtable) = __patmethod_tables[$fun]
+        end
+        add(($mtable), ($method_ex))
+    end
+end
