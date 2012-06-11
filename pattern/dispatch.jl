@@ -2,8 +2,6 @@
 load("pattern/req.jl")
 req("pattern/recode.jl")
 
-predstr = string(:( (fdef.head == :function) || (fdef.head == :(=)) ))
-
 function split_fdef(fdef::Expr)
     @expect (fdef.head == :function) || (fdef.head == :(=))
     @expect length(fdef.args) == 2
@@ -45,10 +43,10 @@ macro patmethod(fdef)
     code_patmethod(fdef)
 end
 function code_patmethod(fdef)
-    defsig, body = split_fdef(fdef)
-    @expect is_expr(defsig, :call)
-    signature_ex = expr(:tuple, defsig.args[2:end])
+    fsig, body = split_fdef(fdef)
+    @expect is_expr(fsig, :call)
 
+    signature_ex = expr(:tuple, fsig.args[2:end])
     signature_ex = recode_patex(signature_ex)
 
     # evaluates the signature expression inline
@@ -70,11 +68,13 @@ function add(mt::PatternMethodTable, m::PatternMethod)
     ms = mt.methods
     n = length(ms)
 
-    # insert the pattern in ascending topological order, as late as possible
+    sig = m.signature 
+
+    # insert the signature in ascending topological order, as late as possible
     i = n+1
     for k=1:n
-        if pat_le(m.signature, ms[k].signature)
-            if pat_ge(m.signature, ms[k].signature)
+        if pat_le(sig, ms[k].signature)
+            if pat_ge(sig, ms[k].signature)
                 # equal signature ==> replace
                 mt.methods[k] = m
                 return
@@ -89,14 +89,18 @@ function add(mt::PatternMethodTable, m::PatternMethod)
 
     # warn if new signature is ambiguous with an old one
     for m0 in ms
-        lb, s = unite(m0.signature, m.signature)
+        sig0 = m0.signature
+#         if pat_ge(sig,sig0) || pat_le(sig, sig0)
+#             continue
+#         end
+        lb = unite(sig0, sig)
         if !(is(lb,nonematch) || any({pat_eq(lb,mk.signature) for mk in ms}))
             # todo: 
             #   o disambiguate pvars in lb (might have same name)
             print("Warning: New @pattern method ", mt.fname)
-            show_sig(m.signature); println()
+            show_sig(sig); println()
             print("         is ambiguous with   ", mt.fname)
-            show_sig(m0.signature); println()
+            show_sig(sig0); println()
             print("         Make sure           ", mt.fname) 
             show_sig(lb)
             println(" is defined first.")
@@ -118,15 +122,14 @@ end
 
 const __patmethod_tables = Dict{Function,PatternMethodTable}()
 
-# macro pattern(fdef)
-#     code_pattern_fdef(fdef)
-# end
+macro pattern(fdef)
+    code_pattern_fdef(fdef)
+end
 function code_pattern_fdef(fdef)
     method_ex = code_patmethod(fdef)
 
-    sig, body = split_fdef(fdef)
-    fname = sig.args[1]
-    qfname = quot(fname)
+    fsig, body = split_fdef(fdef)
+    fname = fsig.args[1]
     @gensym fun mtable
     quote
         ($fun) = nothing
@@ -134,7 +137,7 @@ function code_pattern_fdef(fdef)
             ($fun) = ($fname)
         end
         if is(($fun), nothing)
-            ($mtable) = PatternMethodTable($qfname)
+            ($mtable) = PatternMethodTable($quot(fname))
 #            const ($fname) = create_pattern_function(($mtable))
             const ($fname) = (args...)->dispatch(($mtable), args)
             __patmethod_tables[$fname] = ($mtable)

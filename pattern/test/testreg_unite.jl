@@ -6,7 +6,7 @@ req("pattern/test/utils.jl")
 
 # unite(x, x) = x,
 #     Subs(>=, {}[])
-px, py, pz = @pattern x x x
+px, py, pz = @qpat x x x
 p, s = unite_ps(px,py)
 @test egal(p,pz)
 @test (egal(px, pz)) == true
@@ -17,7 +17,7 @@ p, s = unite_ps(px,py)
 # reverse:
 # unite(x, x) = x,
 #     Subs(>=, {}[])
-px, py, pz = @pattern x x x
+px, py, pz = @qpat x x x
 p, s = unite_ps(px,py)
 @test egal(p,pz)
 @test (egal(px, pz)) == true
@@ -30,7 +30,7 @@ p, s = unite_ps(px,py)
 #     Subs(>=, {
 #         x => y, 
 #     }[])
-px, py, pz = @pattern x y y
+px, py, pz = @qpat x y y
 p, s = unite_ps(px,py)
 @test egal(p,pz)
 @test (egal(px, pz)) == false
@@ -43,7 +43,7 @@ p, s = unite_ps(px,py)
 #     Subs(>=, {
 #         y => x, 
 #     }[])
-px, py, pz = @pattern y x x
+px, py, pz = @qpat y x x
 p, s = unite_ps(px,py)
 @test egal(p,pz)
 @test (egal(px, pz)) == false
@@ -56,7 +56,7 @@ p, s = unite_ps(px,py)
 #     Subs(>=, {
 #         x => 1, 
 #     }[])
-px, py, pz = @pattern x 1 1
+px, py, pz = @qpat x 1 1
 p, s = unite_ps(px,py)
 @test egal(p,pz)
 @test (egal(px, pz)) == false
@@ -69,7 +69,7 @@ p, s = unite_ps(px,py)
 #     Subs(  , {
 #         x => 1, 
 #     }[])
-px, py, pz = @pattern 1 x 1
+px, py, pz = @qpat 1 x 1
 p, s = unite_ps(px,py)
 @test egal(p,pz)
 @test (egal(px, pz)) == true
@@ -80,7 +80,7 @@ p, s = unite_ps(px,py)
 
 # unite(1, 1) = 1,
 #     Subs(>=, {}[])
-px, py, pz = @pattern 1 1 1
+px, py, pz = @qpat 1 1 1
 p, s = unite_ps(px,py)
 @test egal(p,pz)
 @test (egal(px, pz)) == true
@@ -91,7 +91,7 @@ p, s = unite_ps(px,py)
 # reverse:
 # unite(1, 1) = 1,
 #     Subs(>=, {}[])
-px, py, pz = @pattern 1 1 1
+px, py, pz = @qpat 1 1 1
 p, s = unite_ps(px,py)
 @test egal(p,pz)
 @test (egal(px, pz)) == true
@@ -102,7 +102,7 @@ p, s = unite_ps(px,py)
 
 # unite(1, 5) = pat(nonematch),
 #     Subs(  , {}[])
-px, py, pz = @pattern 1 5 pat(nonematch)
+px, py, pz = @qpat 1 5 pat(nonematch)
 p, s = unite_ps(px,py)
 @test egal(p,pz)
 @test (egal(px, pz)) == false
@@ -113,7 +113,7 @@ p, s = unite_ps(px,py)
 # reverse:
 # unite(5, 1) = pat(nonematch),
 #     Subs(  , {}[])
-px, py, pz = @pattern 5 1 pat(nonematch)
+px, py, pz = @qpat 5 1 pat(nonematch)
 p, s = unite_ps(px,py)
 @test egal(p,pz)
 @test (egal(px, pz)) == false
@@ -127,7 +127,7 @@ p, s = unite_ps(px,py)
 #         z~(y,1,) => z~(y,1,), 
 #         x => z~(y,1,), 
 #     }[])
-px, py, pz = @pattern x z~(y,1,) z~(y,1,)
+px, py, pz = @qpat x z~(y,1,) z~(y,1,)
 p, s = unite_ps(px,py)
 @test egal(p,pz)
 @test (egal(px, pz)) == false
@@ -141,7 +141,7 @@ p, s = unite_ps(px,py)
 #         z~(y,1,) => x~(y,1,), 
 #         x => x~(y,1,), 
 #     }[])
-px, py, pz = @pattern z~(y,1,) x x~(y,1,)
+px, py, pz = @qpat z~(y,1,) x x~(y,1,)
 p, s = unite_ps(px,py)
 @test egal(p,pz)
 @test (egal(px, pz)) == false
@@ -156,7 +156,7 @@ p, s = unite_ps(px,py)
 #         x~(y,1,) => z~(5,1,), 
 #         y => 5, 
 #     }[])
-px, py, pz = @pattern x~(y,1,) z~(5,1,) z~(5,1,)
+px, py, pz = @qpat x~(y,1,) z~(5,1,) z~(5,1,)
 p, s = unite_ps(px,py)
 @test egal(p,pz)
 @test (egal(px, pz)) == false
@@ -171,7 +171,7 @@ p, s = unite_ps(px,py)
 #         x~(y,1,) => x~(5,1,), 
 #         y => 5, 
 #     }[])
-px, py, pz = @pattern z~(5,1,) x~(y,1,) x~(5,1,)
+px, py, pz = @qpat z~(5,1,) x~(y,1,) x~(5,1,)
 p, s = unite_ps(px,py)
 @test egal(p,pz)
 @test (egal(px, pz)) == false
@@ -185,7 +185,7 @@ p, s = unite_ps(px,py)
 #         y~(1,x,) => y~(1,x,), 
 #         x => y~(1,x,), 
 #     }[])
-px, py, pz = @pattern x y~(1,x,) y~(1,y,)
+px, py, pz = @qpat x y~(1,x,) y~(1,y,)
 p, s = unite_ps(px,py)
 @test egal(p,pz)
 @test (egal(px, pz)) == false
@@ -199,7 +199,7 @@ p, s = unite_ps(px,py)
 #         y~(1,x,) => x~(1,x,), 
 #         x => x~(1,x,), 
 #     }[])
-px, py, pz = @pattern y~(1,x,) x x~(1,x,)
+px, py, pz = @qpat y~(1,x,) x x~(1,x,)
 p, s = unite_ps(px,py)
 @test egal(p,pz)
 @test (egal(px, pz)) == false

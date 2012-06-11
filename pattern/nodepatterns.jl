@@ -1,4 +1,3 @@
-
 load("pattern/req.jl")
 req("pattern/utils.jl")
 req("pretty/pretty.jl")
@@ -173,7 +172,7 @@ function unite_ps(s::Subs, p::PNode, x::PNode)
 
         # unify the tree patterns
         local y = unify(s, p,x)
-        if is(y,nonematch);  return nonematch;  end
+        if is(y,nonematch);  return (nonematch, s);  end
 
         d.result = y
     end
@@ -181,14 +180,41 @@ function unite_ps(s::Subs, p::PNode, x::PNode)
     y, s
 end
 
+self_unite(s::Subs, p::BareNode) = p
+function self_unite(s::Subs, p::TreeNode)
+    pname = p.simple_name
+    x = lookup(s, pname)
+    if egal(lookup(s,p), x);  return x;  end
+    
+    if egal(x,pname)
+        s[x] = p
+    else
+        # p is unbound in s, as is x
+        raw_unite_step(s, p,x)    
+    end
+end
+
+
 function unite_step(s::Subs, p::PNode, x::PNode)
+    p, x = self_unite(s,p), self_unite(s,x)
     p, x = lookup(s,p), lookup(s,x)
+
+    raw_unite_step(s, p,x)
+end
+
+# assumes p and x are unbound in s
+function raw_unite_step(s::Subs, p::PNode, x::PNode)
+    @assert !has(s.dict, p)
+    @assert !has(s.dict, x)
+
     if egal(p,x);  return x;  end
     
     y = unify(s, p,x)
     if is(y,nonematch);  return nonematch;  end
-    s[p] = s[x] = y    
+    s[p] = s[x] = y
+    get_simple_name(y)
 end
+
 
 #normalized_pattern(s::Subs, ps::Tuple) = map(p->(normalized_pattern(s,p)), ps)
 
@@ -229,6 +255,13 @@ unify(s::Subs, p::Atom,x::Atom) = egal(p,x) ? x : (not_pgex!(s); nonematch)
 unify(s::Subs, p::Atom,x::PVar) = (not_pgex!(s); unify(s, x,p))
 
 unify(s::Subs, p::PVar,x::PVar) = (x.istemp && !p.istemp) ? p : x
+
+
+pat_le(x,y) = (s=unite_ps(y,x)[2]; !s.disproved_p_ge_x)
+pat_ge(x,y) = (s=unite_ps(x,y)[2]; !s.disproved_p_ge_x)
+pat_eq(x,y) = pat_le(x,y) &&  pat_ge(x,y)
+pat_lt(x,y) = pat_le(x,y) && !pat_ge(x,y)
+pat_gt(x,y) = pat_ge(x,y) && !pat_le(x,y)
 
 
 # -- TreePatterns -------------------------------------------------------------
