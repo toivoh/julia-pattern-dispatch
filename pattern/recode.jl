@@ -56,7 +56,7 @@ function recode_patex(c::RPContext, ex::Expr)
 end
 
 
-macro pattern(args...)
+macro qpat(args...)
     code_pattern(args...)
 end
 

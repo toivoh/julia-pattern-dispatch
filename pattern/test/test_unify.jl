@@ -18,17 +18,17 @@ function sym_test_unite(p, x)
 end
 
 test_unite_pairs = {
-    (X, X), (@pattern X X),
-    (X, Y), (@pattern X Y),
-    (X, Atom(1)), (@pattern X 1),
-    (Atom(1), Atom(1)), (@pattern 1 1),
-    (Atom(1), Atom(5)), (@pattern 1 5),
-    (X, TreeNode(Z, TuplePattern((Y, Atom(1))))), (@pattern X Z~(Y,1)),
+    (X, X), (@qpat X X),
+    (X, Y), (@qpat X Y),
+    (X, Atom(1)), (@qpat X 1),
+    (Atom(1), Atom(1)), (@qpat 1 1),
+    (Atom(1), Atom(5)), (@qpat 1 5),
+    (X, TreeNode(Z, TuplePattern((Y, Atom(1))))), (@qpat X Z~(Y,1)),
     (TreeNode(X, TuplePattern((Y, Atom(1)))),
      TreeNode(Z, TuplePattern((Atom(5), Atom(1))))),
-    (@pattern X~(Y,1) Z~(5,1)),
+    (@qpat X~(Y,1) Z~(5,1)),
     (X, TreeNode(Y, TuplePattern((Atom(1), X)))), 
-    (@pattern X Y~(1,X)),
+    (@qpat X Y~(1,X)),
 }
 
 
