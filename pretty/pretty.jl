@@ -53,6 +53,9 @@ function show(io, x)
 end
 
 
+# works as long as this calls jl_show_any...
+default_show(io::IO, T::Type) = print(io, sshow(T)) 
+
 default_show(io::IO, x) = default_show(io, typeof(x), x)
 
 const null_symbol = symbol("")
@@ -64,7 +67,15 @@ function default_show(io, T::CompositeKind, x)
 #         value = getfield(x, field)
 #         print(value)
 #     end
-    values = {getfield(x, field) for field in fields}
+#    values = {getfield(x, field) for field in fields}
+    values = {}
+    for field in fields
+        try 
+            push(values, getfield(x, field))
+        catch err
+            error("default_show: Unable to access field \"$field\" in $(typeof(x))")
+        end
+    end
     print(io, sshow(T), enclose("(", comma_list(values...), ")"))
 #    print(io, sshow(T), enclose("(", comma_list(fields...), ")"))
 end
