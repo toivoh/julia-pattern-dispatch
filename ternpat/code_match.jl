@@ -62,6 +62,7 @@ function code_match(c::MatchCode, node::PNode)
 end
 
 function code_match(c::MatchCode, ::Guard, pred_ex)
+    if pred_ex == quot(true); return; end
     push(c.code, :( 
         if !($pred_ex)
             return false

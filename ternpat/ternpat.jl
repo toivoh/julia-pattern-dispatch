@@ -34,7 +34,17 @@ end
 
 get_deps(node::FuncNode) = {node.guards..., node.args...}
 get_args(node::FuncNode) = node.args
-code_node(::FuncNode, arg_exprs...) = :(($arg_exprs[1])($arg_exprs[2:end]...))
+#code_node(::FuncNode, arg_exprs...) = :(($arg_exprs[1])($arg_exprs[2:end]...))
+function code_node(::FuncNode, arg_exprs...)
+    # hack to avoid redundant egal
+    # todo: do it in a nice way, and for all sure equivalence relations
+    if (length(arg_exprs) == 3) && (arg_exprs[1] == quot(egal))
+        if is(arg_exprs[2], arg_exprs[3])
+            return quot(true)
+        end
+    end
+    :(($arg_exprs[1])($arg_exprs[2:end]...))
+end
 
 function show(io::IO, node::FuncNode)
     print(io, enclose("FuncNode(", {node.guards...}, ", ", node.args))
@@ -59,18 +69,21 @@ get_deps(::Source) = ()
 
 
 type MeetNode <: ValNode
-#    name::VarNode
+    source_factor::ValNode
     factors::Set{ValNode}  # mutable
 end
-MeetNode(factors...) = MeetNode(Set{ValNode}(factors...))
-get_deps(node::MeetNode) = node.factors
-
-show(io::IO, node::MeetNode) = print(io, "MeetNode(...)")
-
+function MeetNode(factor::ValNode, factors::ValNode...) 
+    MeetNode(factor, Set{ValNode}(factor, factors...))
+end
 function meet!(dest::MeetNode, sources::ValNode...)
     dest.factors = union(dest.factors, Set{ValNode}(sources...))
     nothing
 end
+
+get_deps(node::MeetNode) = node.factors
+show(io::IO, node::MeetNode) = print(io, "MeetNode(...)")
+
+get_guards(node::MeetNode) = {egalguard(node, f) for f in node.factors}
 
 
 # -- Helpers ------------------------------------------------------------------
@@ -83,6 +96,7 @@ guard(args...) = Guard(FuncNode((), args))
 typeguard(x, T) = guard(isa,  x, T)
 egalguard(x, y) = guard(egal, x, y)
 
+meet_guards(guards::Guard...) = Guard(FuncNode(guards, {egal, 0, 0}))
 
 macro ternpat(args...)
     code_ternpat(args...)
