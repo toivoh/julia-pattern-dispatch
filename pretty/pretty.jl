@@ -54,7 +54,7 @@ end
 
 
 # works as long as this calls jl_show_any...
-default_show(io::IO, T::Type) = print(io, sshow(T)) 
+default_show(io::IO, x::Union(Type,Function)) = print(io, sshow(x))
 
 default_show(io::IO, x) = default_show(io, typeof(x), x)
 
