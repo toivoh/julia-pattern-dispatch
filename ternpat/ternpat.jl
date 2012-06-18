@@ -35,7 +35,7 @@ end
 get_deps(node::FuncNode) = {node.guards..., node.args...}
 get_args(node::FuncNode) = node.args
 #code_node(::FuncNode, arg_exprs...) = :(($arg_exprs[1])($arg_exprs[2:end]...))
-function code_node(::FuncNode, arg_exprs...)
+function code_node(node::FuncNode, arg_exprs...)
     # hack to avoid redundant egal
     # todo: do it in a nice way, and for all sure equivalence relations
     if (length(arg_exprs) == 3) && (arg_exprs[1] == quot(egal))
