@@ -75,13 +75,16 @@ FuncNode(deps, args) = FuncNode(pnodeset(deps...), as_valnodes(tuple(args...)))
 FuncNode(dep::PNode, args) = FuncNode((dep,), args)
 subs_links(s, node::FuncNode) = FuncNode(s[node.deps], s[node.args])
 
-# todo: get this into upstream if I need it?
-function isequal{T}(xs::Set{T}, ys::Set{T})
-    (length(xs)==length(ys)) && allp(x->has(ys,x), xs)
-end
+# # todo: get this into upstream if I need it?
+# function isequal{T}(xs::Set{T}, ys::Set{T})
+#     (length(xs)==length(ys)) && allp(x->has(ys,x), xs)
+# end
 
-# todo: don't use isequal in egal!
-egal(x::FuncNode, y::FuncNode) = isequal(x.deps,y.deps) && egal(x.args,y.args)
+# # todo: don't use isequal in egal!
+# egal(x::FuncNode, y::FuncNode) = isequal(x.deps,y.deps) && egal(x.args,y.args)
+
+# consider: ok to compare the sets using egal?
+egal(x::FuncNode, y::FuncNode) = egal(x.deps,y.deps) && egal(x.args,y.args)
 
 ## PNode methods
 

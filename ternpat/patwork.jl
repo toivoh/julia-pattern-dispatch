@@ -8,11 +8,15 @@ type Subs
     Subs(args...) = new(SubsDict(args...))
 end
 
+has_any(s, items) = anyp(item->has(s,item), items)
+
 has(s::Subs, node::PNode) = has(s.dict, node)
 
 ref(s::Subs, node::PNode) = get(s.dict, node, node)
 ref(s::Subs, nodes::(PNode...)) = map(node->s[node], nodes)
 ref{T<:PNode}(s::Subs, nodes::Set{T}) = Set{T}(s[tuple(nodes...)]...)
+
+subs_node(s::Subs, node::PNode) = has_any(s,get_links(node)) ? subs_links(s,node) : node
 
 function assign(s::Subs, old_node::PNode, new_node::PNode)
     @expect !has(s.dict, old_node)
@@ -34,7 +38,7 @@ end
 PGraph(nodes::PNode...) = (g=PGraph(); foreach(node->add(g,node), nodes); g)
 
 function add(g::PGraph, node::PNode)
-    node = subs_links(g.subs, node)
+    node = subs_node(g.subs, node)
     if has(g.subs, node); return; end  # node has existed but was replaced
     if store_node(g, node)
         for link in get_links(node)
