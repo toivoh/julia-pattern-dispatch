@@ -2,43 +2,66 @@
 load("pattern/req.jl")
 req("ternpat/ternpat.jl")
 
-type PNodeProps
-    eqclass::PNode
-    fwdeps::Set{PNode}
-end
-
 typealias SubsDict Dict{PNode,PNode}
+type Subs
+    dict::SubsDict
+    Subs(args...) = new(SubsDict(args...))
+end
+
+has(s::Subs, node::PNode) = has(s.dict, node)
+
+ref(s::Subs, node::PNode) = get(s.dict, node, node)
+ref(s::Subs, nodes::(PNode...)) = map(node->s[node], nodes)
+ref{T<:PNode}(s::Subs, nodes::Set{T}) = Set{T}(s[tuple(nodes...)]...)
+
+function assign(s::Subs, old_node::PNode, new_node::PNode)
+    @expect !has(s.dict, old_node)
+    if egal(old_node, new_node); return; end
+    @expect !has(s.dict, new_node)
+    s.dict[old_node] = new_node
+    # todo: apply this subs to all nodes!
+    new_node
+end
+
+
 typealias NodesDict Dict{Any,PNode}
-typealias PropsDict Dict{PNode,PNodeProps}
-
 type PGraph
-    subs::SubsDict
-    nodes::NodesDict
-    props::PropsDict
+    subs::Subs
+    nodes::NodesDict  # key => PNode
 
-    PGraph() = new(SubsDict(), NodesDict(), PropsDict())
+    PGraph() = new(Subs(), NodesDict())
 end
-
-function subs(g::PGraph, node::PNode)
-    while has(g.subs, node)
-        node = g.subs[node]  # todo: save the result to all of these?
-    end
-
-    node = subs_deps(g, node)
-    
-    g.subs[node] = node
-end
+PGraph(nodes::PNode...) = (g=PGraph(); foreach(node->add(g,node), nodes); g)
 
 function add(g::PGraph, node::PNode)
-    node = subs(g, node)  # brings node up to date using g.subs
-
-    if has(g.nodes, node); return; end
-    g.props[node] = PNodeProps(node, Set{PNode}())
-
-    key = getkey(node)
-    if has(g.nodes, key)
-        g.nodes[key] = unite(g, g.nodes[key],node)
-    else
-        g.nodes[key] = node
+    node = subs_links(g.subs, node)
+    if has(g.subs, node); return; end  # node has existed but was replaced
+    if store_node(g, node)
+        for link in get_links(node)
+            add(g, link)
+        end    
     end
+end
+
+function store_node(g::PGraph, node::PNode)
+    key = getkey(node)    
+    while has(g.nodes, key)
+        node0 = g.nodes[key]
+        new_node = unify(g, node0, node)
+
+        if egal(new_node, node0); return false; end
+
+        del(g.nodes, key)
+        g.subs[node0] = g.subs[node] = new_node
+        node = new_node
+
+        key = getkey(node)
+    end
+    g.nodes[key] = node
+    true
+end
+
+function unify(g::PGraph, x::PNode, y::PNode)
+    if egal(x,y); return x; end
+    error("Unimplemented: unify\n\tx=$x\n\ty=$y")
 end

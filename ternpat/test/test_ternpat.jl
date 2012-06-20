@@ -1,7 +1,8 @@
 
 load("pattern/req.jl")
 #load("ternpat/ternpat.jl")
-load("ternpat/code_match.jl")
+req("ternpat/code_match.jl")
+req("ternpat/patwork.jl")
 req("pretty/pretty.jl")
 
 
@@ -19,4 +20,6 @@ g2 = egaldep(ref2, arg)
 
 sinks = pnodeset(g1, g2)
 
-show(code_match(sinks))
+println(code_match(sinks))
+
+graph = PGraph(sinks...)
