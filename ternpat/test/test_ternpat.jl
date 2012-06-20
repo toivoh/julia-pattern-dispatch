@@ -1,23 +1,22 @@
 
 load("pattern/req.jl")
+#load("ternpat/ternpat.jl")
 load("ternpat/code_match.jl")
 req("pretty/pretty.jl")
 
 
-arg = VarNode(:arg)
-source = MeetNode(arg)
+arg  = VarNode(:arg)
+gvec = typeguard(arg,Vector)
 
-gvector = typeguard(source,Vector)
+arglen = @ternpat (gvec; length(arg))
+dlen   = egaldep(arglen, 2)
 
-slen = @ternpat length(source) gvector
-glength = egalguard(slen, 2)
+ref1 = @ternpat (dlen; ref(arg, 1))
+ref2 = @ternpat (dlen; ref(arg, 2))
 
-ref1 = @ternpat ref(source, 1) glength
-ref2 = @ternpat ref(source, 2) glength
+g1 = egaldep(ref1, 1)
+g2 = egaldep(ref2, arg)
 
-g1 = egalguard(ref1, 1)
-meet!(source, ref2)
+sinks = pnodeset(g1, g2)
 
-pattern_matches = meet_guards(g1, get_guards(source)...)
-
-show(code_match(pattern_matches))
+show(code_match(sinks))

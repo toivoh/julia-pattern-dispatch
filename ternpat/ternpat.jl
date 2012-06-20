@@ -13,101 +13,98 @@ egal{T<:Tuple}(xs::T, ys::T) = all({egal(x,y) for (x,y) in zip(xs,ys)})
 
 abstract PNode
 abstract   ValNode <: PNode
-abstract     Source  <: ValNode
+abstract     FNode   <: ValNode
+abstract       Source  <: FNode
 
 
-get_args(node::PNode) = get_deps(node)
+## PNodeSet
+typealias PNodeSet Set{PNode}
+
+as_pnodeset(node::PNode) = PNodeSet(node)
+as_pnodeset(s::PNodeSet) = s
+pnodeset(nodes::PNode...) = PNodeSet(nodes...)
+pnodeset(args...) = union(map(as_pnodeset, args)...)
 
 
-type Guard{T<:ValNode} <: PNode
-    predicate::T
-end
-get_deps(g::Guard) = {g.predicate}
-
-show(io::IO, g::Guard) = print(io, enclose("Guard(", g.predicate, ")"))
-
-type FuncNode <: ValNode
-    guards::Set{Guard}
-    args::Vector{ValNode}
-end
-function FuncNode(guards, args) 
-    FuncNode(Set{Guard}(guards...), ValNode[map(as_valnode, args)...])
+## Guard
+type Guard <: PNode
+    predicate::ValNode
 end
 
-get_deps(node::FuncNode) = {node.guards..., node.args...}
-get_args(node::FuncNode) = node.args
-#code_node(::FuncNode, arg_exprs...) = :(($arg_exprs[1])($arg_exprs[2:end]...))
-function code_node(node::FuncNode, arg_exprs...)
-    # hack to avoid redundant egal
-    # todo: do it in a nice way, and for all sure equivalence relations
-    if (length(arg_exprs) == 3) && (arg_exprs[1] == quot(egal))
-        if is(arg_exprs[2], arg_exprs[3])
-            return quot(true)
-        end
-    end
-    :(($arg_exprs[1])($arg_exprs[2:end]...))
+## MeetNode
+type MeetNode <: ValNode
+    primary_factor::ValNode
+    factors::Set{ValNode}  # mutable    
 end
-
-function show(io::IO, node::FuncNode)
-    print(io, enclose("FuncNode(", {node.guards...}, ", ", node.args))
+function MeetNode(primary_factor::ValNode, factors::ValNode...) 
+    MeetNode(primary_factor, Set{ValNode}(primary_factor, factors...))
 end
+MeetNode(args...) = MeetNode(as_valnodes(args)...)
 
 
+## VarNode and Atom <: Source
 type VarNode <: Source
     name::Symbol
 end
-code_node(node::VarNode) = node.name
 type Atom{T} <: Source
     value::T
 end
-code_node(node::Atom) = quot(node.value)
-
 egal(x::Atom, y::Atom) = egal(x.value, y.value)
 isequal(x::Atom, y::Atom) = egal(x, y)
 hash(x::Atom) = hash(x.value)
 
-
-get_deps(::Source) = ()
-
-
-type MeetNode <: ValNode
-    source_factor::ValNode
-    factors::Set{ValNode}  # mutable
+## FuncNode
+type FuncNode <: ValNode
+    deps::PNodeSet
+    args::Vector{ValNode}
 end
-function MeetNode(factor::ValNode, factors::ValNode...) 
-    MeetNode(factor, Set{ValNode}(factor, factors...))
-end
-function meet!(dest::MeetNode, sources::ValNode...)
-    dest.factors = union(dest.factors, Set{ValNode}(sources...))
-    nothing
-end
+FuncNode(deps,args) = FuncNode(pnodeset(deps...),ValNode[as_valnodes(args)...])
+FuncNode(dep::PNode, args) = FuncNode((dep,), args)
 
-get_deps(node::MeetNode) = node.factors
+
+## PNode methods
+
+get_deps(node::Guard) = (node.predicate,)
+get_args(node::Guard) = (node.predicate,)
+
+get_deps(node::FuncNode) = node.deps
+get_args(node::FuncNode) = node.args
+
+get_deps(::PNode)  = ()
+get_args(::Source) = ()
+
+
+code_node(node::VarNode) = node.name
+code_node(node::Atom) = quot(node.value)
+code_node(::FuncNode, arg_exprs...) = :(($arg_exprs[1])($arg_exprs[2:end]...))
+
+#show(io::IO, g::Guard) = print(io, enclose("Guard(", g.predicate, ")"))
 show(io::IO, node::MeetNode) = print(io, "MeetNode(...)")
-
-get_guards(node::MeetNode) = {egalguard(node, f) for f in node.factors}
+function show(io::IO, node::FuncNode)
+    print(io, enclose("FuncNode(", node.args, ", ", {node.deps...}, ")"))
+end
 
 
 # -- Helpers ------------------------------------------------------------------
 
+as_valnodes(args) = map(as_valnode, args)
+
 as_valnode(x::PNode) = x::ValNode
 as_valnode(x) = Atom(x)
 
-guard(args...) = Guard(FuncNode((), args))
 
-typeguard(x, T) = guard(isa,  x, T)
-egalguard(x, y) = guard(egal, x, y)
+typeguard(x, T) = Guard(FuncNode((), (isa, x, T)))
 
-meet_guards(guards::Guard...) = Guard(FuncNode(guards, {egal, 0, 0}))
+egaldep(x::ValNode, y::ValNode) = pnodeset(x, y, MeetNode(x,y))
+egaldep(args...) = egaldep(as_valnodes(args)...)
 
 macro ternpat(args...)
     code_ternpat(args...)
 end
-function code_ternpat(args...)
-    guards = args[2:end]
-    call = args[1]
+function code_ternpat(arg)
+    g,call = is_expr(arg,:block) ? (arg.args[1:end-1],arg.args[end]) : ({},arg)
     @expect is_expr(call, :call)
     quote
-        FuncNode({$guards...}, {$call.args...})
+        FuncNode({$g...}, {$call.args...})
     end
 end
