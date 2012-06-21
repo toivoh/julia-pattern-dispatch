@@ -22,7 +22,7 @@ abstract       SourceNode     <: ValueNode  # Leaf nodes
 type Guard <: ExecNode
     predicate::ResultNode
 end
-# subs_links(s, node::Guard) = Guard(s[node.predicate])
+subs_links(s, node::Guard) = Guard(s[node.predicate])
 
 # egal(x::Guard, y::Guard) = egal(x.predicate, y.predicate)
 # isequal(x::Guard, y::Guard) = egal(x, y)
@@ -37,12 +37,13 @@ end
 function DepNode(deps::PNode...)
     s = Set{PNode}()
     for node in deps
-        if !isa(node, SourceNode)
+#        if !isa(node, SourceNode)  # messes up egaldep right now
             add(s, node)
-        end
+#        end
     end
     DepNode(s)
 end
+subs_links(s, node::DepNode) = dep(s[node.deps]...)
 
 dep(node::DepNode) = node
 dep(args::Tuple) = dep(args...)
@@ -57,7 +58,7 @@ end
 function FuncNode(deps, args) 
     FuncNode(dep(deps), convert((ValueNode...), tuple(args...)))
 end
-# subs_links(s, node::FuncNode) = FuncNode(s[node.deps], s[node.args])
+subs_links(s, node::FuncNode) = FuncNode(s[node.deps], s[node.args])
 
 # # todo: get this into upstream if I need it?
 # function isequal{T}(xs::Set{T}, ys::Set{T})
@@ -75,12 +76,12 @@ end
 function MeetNode(primary_factor::ResultNode, factors::ResultNode...) 
     MeetNode(primary_factor, Set{ResultNode}(primary_factor, factors...))
 end
-# function subs_links(s, node::MeetNode) 
-#     #  subs_links must return the same MeetNode, since it can have back edges
-#     node.primary_factor = s[node.primary_factor]
-#     node.factors = s[node.factors]
-#     node
-# end
+function subs_links(s, node::MeetNode) 
+    #  subs_links must return the same MeetNode, since it can have back edges
+    node.primary_factor = s[node.primary_factor]
+    node.factors = s[node.factors]
+    node
+end
 
 ## VarNode: Read from a named variable
 type VarNode <: SourceNode
@@ -116,23 +117,43 @@ get_links(node::MeetNode) = node.factors
 
 get_deps(node::FuncNode) = (node.deps,)
 get_args(node::FuncNode) = node.args
-get_links(node::FuncNode) = {node.deps..., node.args...}
+get_links(node::FuncNode) = {node.deps, node.args...}
 
 get_deps(::PNode)  = ()
 get_args(::SourceNode) = ()
 get_links(::SourceNode) = ()
 
 
-# getkey(node::FuncNode) = (FuncNode, node.args::Tuple)  # exclude deps from key
-# getkey(node::PNode)    = node
+getkeys(node::MeetNode) = {(MeetNode, factor) for node in node.factors}
+getkeys(node::PNode) = (getkey(node),)
+
+getkey(node::Guard)    = (Guard, node.predicate)
+getkey(node::FuncNode) = (FuncNode, node.args::Tuple)  # exclude deps from key
+getkey(node::MeetNode) = error("Call getkeys instead!")
+getkey(node::PNode)    = node
 
 
 code_node(node::VarNode) = node.name
 code_node(node::AtomNode) = quot(node.value)
 code_node(::FuncNode, arg_exprs...) = :(($arg_exprs[1])($arg_exprs[2:end]...))
 
+
+__nodeids = Dict{PNode,Int}()
+__lastnodeid = 0
+function getnodeid(node::PNode) 
+    global __nodeids, __lastnodeid
+    @setdefault __nodeids[node] = (__lastnodeid += 1)
+end
+
+
 #show(io::IO, g::Guard) = print(io, enclose("Guard(", g.predicate, ")"))
-show(io::IO, node::MeetNode) = print(io, "MeetNode(...)")
+#show(io::IO, node::MeetNode) = print(io, "MeetNode(...)")
+function show(io::IO, node::MeetNode) 
+    print(io, enclose("MeetNode(", 
+        comma_list({getnodeid(factor) for factor in node.factors}...), ")"))
+end
+
+
 function show(io::IO, node::FuncNode)
     print(io, enclose("FuncNode(", node.deps, ", ", node.args, ")"))
 end
