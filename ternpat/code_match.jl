@@ -27,15 +27,11 @@ function emit_eqguard(c::MatchCode, node::PNode)
     end
 end
 
-function code_match(sinks::PNodeSet)
+function code_match(sink::PNode)
     c = MatchCode()
-    for sink in sinks
-        get_result(c, sink)
-    end
+    get_result(c, sink)
     expr(:block, c.code)
 end
-code_match(sink::PNode) = code_match(pnodeset(sink))
-
 
 #code_match(c::MatchCode, node::MeetNode) = get_result(c, node.primary_factor)
 function code_match(c::MatchCode, node::MeetNode) 
@@ -64,6 +60,8 @@ function code_guard(c::MatchCode, pred_ex)
     ))
     nothing
 end
-function code_node(c::MatchCode, node::ValNode, arg_exprs...)
+function code_node(c::MatchCode, node::ResultNode, arg_exprs...)
     code_node(node, arg_exprs...)
 end
+
+code_node(c::MatchCode, ::DepNode) = nothing
