@@ -10,6 +10,11 @@ egal{T<:Number}(x::T, y::T) = isequal(x, y)
 egal{T<:Tuple}(xs::T, ys::T) = all({egal(x,y) for (x,y) in zip(xs,ys)})
 
 
+abstract Subs
+
+ref(s::Subs, args::Tuple) = map(x->s[x], args)
+
+
 # -- PNode --------------------------------------------------------------------
 abstract PNode
 abstract   SourceNode <: PNode
@@ -21,6 +26,7 @@ end
 type AtomNode{T} <: SourceNode
     value::T
 end
+subs_links(s::Subs, node::SourceNode) = node
 
 egal(x::AtomNode, y::AtomNode) = egal(x.value, y.value)
 isequal(x::AtomNode, y::AtomNode) = egal(x, y)
@@ -31,15 +37,21 @@ type FuncNode <: PNode
     args::Vector{PNode}
 end
 FuncNode(args...) = FuncNode(PNode[args...])
+subs_links(s::Subs, node::FuncNode) = FuncNode(s[node.args])
 
 type GateNode <: PNode
     value::PNode
     condition::PNode
 end
+subs_links(s::Subs, node::GateNode) = GateNode(s[node.value],s[node.condition])
 
 
 get_args(node::SourceNode) = ()
 get_args(node::FuncNode) = node.args
+
+get_links(node::SourceNode) = ()
+get_links(node::FuncNode) = node.args
+get_links(node::GateNode) = (node.value, node.condition)
 
 
 code_apply(arg_exprs...) = :(($arg_exprs[1])($arg_exprs[2:end]...))
@@ -47,6 +59,11 @@ code_apply(arg_exprs...) = :(($arg_exprs[1])($arg_exprs[2:end]...))
 code_node(node::VarNode) = node.name
 code_node(node::AtomNode) = quot(node.value)
 code_node(::FuncNode, arg_exprs...) = code_apply(arg_exprs...)
+
+
+getkey(node::SourceNode) = node
+getkey(node::FuncNode) = (FuncNode, node.args)
+getkey(node::GateNode) = (GateNode, node.value, node.condition)
 
 
 # -- Helpers ------------------------------------------------------------------
