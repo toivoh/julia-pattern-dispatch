@@ -2,8 +2,6 @@
 load("pattern/req.jl")
 req("simptern/pnode.jl")
 
-quot(ex) = expr(:quote, ex)
-
 is_true_expr(ex) = (ex == :true) || (ex == quot(true))
 
 
