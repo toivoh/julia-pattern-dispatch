@@ -1,13 +1,5 @@
 
-
-# -- egal ---------------------------------------------------------------------
-
-egal(x) = true
-egal(x,y,z,args...) = egal(x,y) && egal(y,z,args...)
-
-egal(x,y) = is(x,y)
-egal{T<:Number}(x::T, y::T) = isequal(x, y)
-egal{T<:Tuple}(xs::T, ys::T) = all({egal(x,y) for (x,y) in zip(xs,ys)})
+require("simptern/immutable.jl")
 
 
 abstract Subs
