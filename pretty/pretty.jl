@@ -39,6 +39,8 @@ pshow(io::IO, args...) = show(pretty(io), args...)
 pprint(args...) = pprint(OUTPUT_STREAM, args...)
 pshow(args...) = pshow(OUTPUT_STREAM, args...)
 
+show(io::PrettyIO, x::Float64) = print(io, sshow(x))
+show(io::PrettyIO, x::Float32) = print(io, sshow(x))
 # fix to avoid jl_show_any on PrettyIO (segfaults)
 function show(io, x) 
     io::IO
