@@ -6,7 +6,7 @@ require("pretty/pretty.jl")
 
 ex = :(
     type T
-        x
+        x::Float
         T(x) = new(x)
     end
 )
@@ -14,10 +14,11 @@ ex = :(
 println(code_immutable_type(ex))
 
 @immutable type T
-    x
+    x::Float
     T(x) = new(x)
 end
 
 println()
 @show is(T(1),T(1))
+@show is(T(1),T(1.0))
 @show is(T(1),T(2))

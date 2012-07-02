@@ -42,20 +42,28 @@ function memoized_apply(d::Dict, f::Function, args...)
     has(d, key) ? d[key] : (d[key] = f(args...))
 end
 
-function replace_new(ex::Expr, d::Dict)
+type ImmNew
+    d::Dict
+    typenames::Vector
+end
+
+function replace_new(ex::Expr, imn::ImmNew)
     if is_expr(ex, :call) && ex.args[1] == :new
         fname = ex.args[1]
         fargs = ex.args[2:end]        
-        @gensym key
-        quote
-            ($key) = ImmVector{Any}(($fargs...))
-            @setdefault ($quot(d))[($key)] = ($fname)($fargs...)
+        @gensym cargs key
+        quote            
+#             ($key) = ImmVector{Any}(($fargs...))
+            ($cargs) = convert(($asttuple(imn.typenames)), ($asttuple(fargs)))
+            ($key) = ImmVector{Any}(($cargs)...)            
+#             @setdefault ($quot(imn.d))[($key)] = ($fname)($fargs...)
+            @setdefault ($quot(imn.d))[($key)] = ($fname)(($cargs)...)
         end
     else
-        expr(ex.head, {replace_new(arg, d) for arg in ex.args})
+        expr(ex.head, {replace_new(arg, imn) for arg in ex.args})
     end
 end
-replace_new(ex, d::Dict) = ex
+replace_new(ex, imn::ImmNew) = ex
 
 macro immutable(ex) 
     code_immutable_type(ex)
@@ -68,25 +76,33 @@ function code_immutable_type(ex)
     
     @gensym newimm
     fieldtypes = {}
+    constructors = {}
     newdefs = {}
-    memodict = Dict()
     for def in defs.args
-        if isa(def, Symbol); push(fieldtypes, quot(Any))
-        elseif is_expr(def, doublecolon, 2); push(fieldtypes, def.args[2])
-        elseif is_fdef(def)
+        if is_fdef(def)
             signature, body = split_fdef(def)
             @expect is_expr(signature, :call)
             if signature.args[1] == typename  # constructor
                 @expect is_expr(body, :block)
-                body = replace_new(body, memodict)
-                def = :(($signature)=($body))
+                push(constructors, (signature, body))
+                continue
             end
+        end
+        if isa(def, Symbol); push(fieldtypes, quot(Any))
+        elseif is_expr(def, doublecolon, 2); push(fieldtypes, def.args[2])
         elseif is_expr(def, :line) || isa(def, LineNumberNode) # ignore line nr
         elseif isa(def, Symbol) || is_expr(def, doublecolon) # ignore fields
         else
             error("@immutable type: def = ", def)
         end
         push(newdefs, def)
+    end
+
+    memodict = Dict()
+    imn = ImmNew(memodict, fieldtypes)
+    for (signature, body) in constructors
+        body = replace_new(body, imn)
+        push(newdefs, :(($signature)=($body)))
     end
 
     typedef = expr(:type, typename, expr(:block, newdefs))

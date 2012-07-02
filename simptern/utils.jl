@@ -2,6 +2,8 @@
 const doublecolon = symbol("::")
 
 quot(ex) = expr(:quote, ex)
+#quotuple(exprs) = expr(:tuple, {quot(ex) for ex in exprs})
+asttuple(exprs) = expr(:tuple, exprs...)
 
 is_expr(ex, head::Symbol) = (isa(ex, Expr) && (ex.head == head))
 function is_expr(ex, head::Symbol, nargs::Int)
