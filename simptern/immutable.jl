@@ -37,11 +37,6 @@ hash(x::ImmArray) = hash(x.data)
 
 # -- @immutable ---------------------------------------------------------------
 
-function memoized_apply(d::Dict, f::Function, args...)
-    key = ImmVector{Any}(f, args...)
-    has(d, key) ? d[key] : (d[key] = f(args...))
-end
-
 type ImmNew
     d::Dict
     typenames::Vector
@@ -49,14 +44,11 @@ end
 
 function replace_new(ex::Expr, imn::ImmNew)
     if is_expr(ex, :call) && ex.args[1] == :new
-        fname = ex.args[1]
-        fargs = ex.args[2:end]        
+        fname, fargs = ex.args[1], ex.args[2:end]
         @gensym cargs key
         quote            
-#             ($key) = ImmVector{Any}(($fargs...))
             ($cargs) = convert(($asttuple(imn.typenames)), ($asttuple(fargs)))
             ($key) = ImmVector{Any}(($cargs)...)            
-#             @setdefault ($quot(imn.d))[($key)] = ($fname)($fargs...)
             @setdefault ($quot(imn.d))[($key)] = ($fname)(($cargs)...)
         end
     else
@@ -74,7 +66,6 @@ function code_immutable_type(ex)
 
     @expect is_expr(defs, :block)
     
-    @gensym newimm
     fieldtypes = {}
     constructors = {}
     newdefs = {}
@@ -83,18 +74,12 @@ function code_immutable_type(ex)
             signature, body = split_fdef(def)
             @expect is_expr(signature, :call)
             if signature.args[1] == typename  # constructor
-                @expect is_expr(body, :block)
                 push(constructors, (signature, body))
                 continue
             end
         end
-        if isa(def, Symbol); push(fieldtypes, quot(Any))
-        elseif is_expr(def, doublecolon, 2); push(fieldtypes, def.args[2])
-        elseif is_expr(def, :line) || isa(def, LineNumberNode) # ignore line nr
-        elseif isa(def, Symbol) || is_expr(def, doublecolon) # ignore fields
-        else
-            error("@immutable type: def = ", def)
-        end
+        if isa(def, Symbol);                 push(fieldtypes, quot(Any))
+        elseif is_expr(def, doublecolon, 2); push(fieldtypes, def.args[2]); end
         push(newdefs, def)
     end
 
@@ -105,10 +90,8 @@ function code_immutable_type(ex)
         push(newdefs, :(($signature)=($body)))
     end
 
-    typedef = expr(:type, typename, expr(:block, newdefs))
-    
     quote
-        ($typedef)
+        ($expr(:type, typename, expr(:block, newdefs)))
         __immdict(::Type{$typename}) = ($quot(memodict))
     end
 end
