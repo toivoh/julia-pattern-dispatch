@@ -1,9 +1,8 @@
 
-load("pattern/req.jl")
-req("simptern/pnode.jl")
-req("simptern/code_match.jl")
-req("simptern/transform.jl")
-req("pretty/pretty.jl")
+require("simptern/pnode.jl")
+require("simptern/code_match.jl")
+require("pretty/pretty.jl")
+
 
 function make_net(arg::PNode)
     gvector = isanode(arg, Vector)
@@ -27,15 +26,10 @@ end
 arg = VarNode(:arg)
 
 sink, gvector, arg_v, len, glen2, arg_v2, e1, e2, ge1, ge2 = make_net(arg)
-
-m = EndoMap()
-msink = m[sink]
-# show(sink2)
-
-gv = isanode(arg, Vector)
-@assert egal(m[gv], gvector)
-
 sink2 = make_net(arg)[1]
 
-@assert !egal(sink, sink2)
-@assert egal(sink, m[sink2])
+nodes3 = make_net(arg)
+nodes4 = make_net(arg)
+
+@show is(sink, sink2)
+@show [is(n1,n2) for (n1,n2) in zip(nodes3,nodes4)]

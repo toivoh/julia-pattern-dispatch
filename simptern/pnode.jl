@@ -15,23 +15,24 @@ abstract   SourceNode <: PNode
 type VarNode <: SourceNode
     name::Symbol
 end
-type AtomNode{T} <: SourceNode
+@immutable type AtomNode{T} <: SourceNode
     value::T
 end
+AtomNode{T}(x::T) = AtomNode{T}(x)
 subs_links(s::Subs, node::SourceNode) = node
 
-egal(x::AtomNode, y::AtomNode) = egal(x.value, y.value)
-isequal(x::AtomNode, y::AtomNode) = egal(x, y)
-hash(x::AtomNode) = hash(x.value)
+# egal(x::AtomNode, y::AtomNode) = egal(x.value, y.value)
+# isequal(x::AtomNode, y::AtomNode) = egal(x, y)
+# hash(x::AtomNode) = hash(x.value)
 
 
-type FuncNode <: PNode
+@immutable type FuncNode <: PNode
     args::Vector{PNode}
 end
 FuncNode(args...) = FuncNode(PNode[args...])
 subs_links(s::Subs, node::FuncNode) = FuncNode(s[node.args])
 
-type GateNode <: PNode
+@immutable type GateNode <: PNode
     value::PNode
     condition::PNode
 end

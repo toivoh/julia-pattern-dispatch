@@ -37,32 +37,41 @@ hash(x::ImmArray) = hash(x.data)
 
 # -- @immutable ---------------------------------------------------------------
 
-type ImmNew
-    d::Dict
-    typenames::Vector
-end
+# type ImmNew
+#     d::Dict
+#     typenames::Vector
+# end
 
-function replace_new(ex::Expr, imn::ImmNew)
-    if is_expr(ex, :call) && ex.args[1] == :new
-        fname, fargs = ex.args[1], ex.args[2:end]
-        @gensym cargs key
-        quote            
-            ($cargs) = convert(($asttuple(imn.typenames)), ($asttuple(fargs)))
-            ($key) = ImmVector{Any}(($cargs)...)            
-            @setdefault ($quot(imn.d))[($key)] = ($fname)(($cargs)...)
-        end
-    else
-        expr(ex.head, {replace_new(arg, imn) for arg in ex.args})
-    end
+# function replace_new(ex::Expr, imn::ImmNew)
+#     if is_expr(ex, :call) && ex.args[1] == :new
+#         fname, fargs = ex.args[1], ex.args[2:end]
+#         @gensym cargs key
+#         quote            
+#             ($cargs) = convert(($asttuple(imn.typenames)), ($asttuple(fargs)))
+#             ($key) = ImmVector{Any}(($cargs)...)            
+#             @setdefault ($quot(imn.d))[($key)] = ($fname)(($cargs)...)
+#         end
+#     else
+#         expr(ex.head, {replace_new(arg, imn) for arg in ex.args})
+#     end
+# end
+# replace_new(ex, imn::ImmNew) = ex
+
+replace_symbol(ex::Symbol, from::Symbol, to::Symbol) = (ex == from ? to : ex)
+function replace_symbol(ex::Expr, from::Symbol, to::Symbol) 
+    expr(ex.head, {replace_symbol(arg, from, to) for arg in ex.args})
 end
-replace_new(ex, imn::ImmNew) = ex
+replace_symbol(ex, from::Symbol, to::Symbol) = ex
+
 
 macro immutable(ex) 
     code_immutable_type(ex)
 end
 function code_immutable_type(ex)
     @expect is_expr(ex, :type, 2)
-    typename, defs = tuple(ex.args...)
+    typesig, defs = tuple(ex.args...)
+    ts = is_expr(typesig, :comparison) ? typesig.args[1] : typesig
+    typename = (is_expr(ts, :curly) ? ts.args[1] : ts)::Symbol
 
     @expect is_expr(defs, :block)
     
@@ -83,15 +92,29 @@ function code_immutable_type(ex)
         push(newdefs, def)
     end
 
+    if isempty(constructors)
+        constructors = {(:(($typename)(args...)), :(new(args...)))}
+    end
+
     memodict = Dict()
-    imn = ImmNew(memodict, fieldtypes)
+#     imn = ImmNew(memodict, fieldtypes)
+    @gensym immnew key cargs
     for (signature, body) in constructors
-        body = replace_new(body, imn)
+#        body = replace_new(body, imn)
+        body = replace_symbol(body, :new, immnew)
+        body = quote
+            ($immnew)(args...) = begin
+                ($cargs) = convert(($asttuple(fieldtypes)), args)
+                ($key) = ImmVector{Any}(($cargs)...)            
+                @setdefault ($quot(memodict))[($key)] = new(($cargs)...)
+            end
+            ($body)
+        end
         push(newdefs, :(($signature)=($body)))
     end
 
     quote
-        ($expr(:type, typename, expr(:block, newdefs)))
+        ($expr(:type, typesig, expr(:block, newdefs)))
         __immdict(::Type{$typename}) = ($quot(memodict))
     end
 end

@@ -1,6 +1,5 @@
 
-load("pattern/req.jl")
-req("simptern/pnode.jl")
+require("simptern/pnode.jl")
 
 is_true_expr(ex) = (ex == :true) || (ex == quot(true))
 
