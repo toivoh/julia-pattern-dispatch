@@ -30,6 +30,23 @@ function split_fdef(fdef::Expr)
 end
 split_fdef(f::Any) = error("split_fdef: expected function definition, got\n$f")
 
+macro setdefault(ex)
+    @expect is_expr(ex, :(=))
+    ref_ex, default_ex = tuple(ex.args...)
+    @expect is_expr(ref_ex, :ref)
+    dict_ex, key_ex = tuple(ref_ex.args...)
+    @gensym dict key #defval
+    quote
+        ($dict)::Associative = ($dict_ex)
+        ($key) = ($key_ex)
+        if has(($dict), ($key))
+            ($dict)[($key)]
+        else
+            ($dict)[($key)] = ($default_ex) # returns the newly inserted value
+        end
+    end
+end
+
 macro show(ex)
     :(println(($string(ex)), "\t= ", sshow($ex)) )
 end

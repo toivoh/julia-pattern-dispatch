@@ -42,33 +42,20 @@ function memoized_apply(d::Dict, f::Function, args...)
     has(d, key) ? d[key] : (d[key] = f(args...))
 end
 
-macro memoized(ex, d)
-    @expect is_expr(ex, :call)
-    fname = ex.args[1]
-    fargs = ex.args[2:end]
-    @gensym key
-    quote
-        ($key) = ImmVector{Any}(($fargs...))
-        has(($d),($key)) ? ($d)[($key)] : (($d)[($key)] = ($fname)($fargs...))
-    end
-end
-
-
-function replace_new(ex::Expr, dsym::Symbol)
+function replace_new(ex::Expr, d::Dict)
     if is_expr(ex, :call) && ex.args[1] == :new
-#         :( memoized_apply(($quot(d)), new, ($ex.args[2:end]...)) )
-        :(@memoized ($ex) ($dsym))
+        fname = ex.args[1]
+        fargs = ex.args[2:end]        
+        @gensym key
+        quote
+            ($key) = ImmVector{Any}(($fargs...))
+            @setdefault ($quot(d))[($key)] = ($fname)($fargs...)
+        end
     else
-        expr(ex.head, {replace_new(arg, dsym) for arg in ex.args})
+        expr(ex.head, {replace_new(arg, d) for arg in ex.args})
     end
 end
-replace_new(ex, dsym::Symbol) = ex
-
-# replace_symbol(ex::Symbol, from::Symbol, to::Symbol) = (ex == from ? to : ex)
-# function replace_symbol(ex::Expr, from::Symbol, to::Symbol) 
-#     expr(ex.head, {replace_symbol(arg, from, to) for arg in ex.args})
-# end
-# replace_symbol(ex, from::Symbol, to::Symbol) = ex
+replace_new(ex, d::Dict) = ex
 
 macro immutable(ex) 
     code_immutable_type(ex)
@@ -80,34 +67,23 @@ function code_immutable_type(ex)
     @expect is_expr(defs, :block)
     
     @gensym newimm
-#     fieldnames = {}
+    fieldtypes = {}
     newdefs = {}
     memodict = Dict()
-    @gensym memosym
-    @eval ($memosym) = ($quot(memodict))
     for def in defs.args
-#         if isa(def, Symbol); push(fieldnames, def);
-#         elseif is_expr(def, doublecolon, 2); push(fieldnames, def.args[1]);
-        if is_fdef(def)
+        if isa(def, Symbol); push(fieldtypes, quot(Any))
+        elseif is_expr(def, doublecolon, 2); push(fieldtypes, def.args[2])
+        elseif is_fdef(def)
             signature, body = split_fdef(def)
             @expect is_expr(signature, :call)
             if signature.args[1] == typename  # constructor
                 @expect is_expr(body, :block)
-#                 body = quote
-# #                     let new = (args...)->memoized_apply(($quot(memodict)), 
-# #                                                         new, args...)
-#                     let new = 5  
-#                         ($body.args...)
-#                     end
-#                 end
-                body = replace_new(body, memosym)
+                body = replace_new(body, memodict)
                 def = :(($signature)=($body))
             end
         elseif is_expr(def, :line) || isa(def, LineNumberNode) # ignore line nr
         elseif isa(def, Symbol) || is_expr(def, doublecolon) # ignore fields
         else
-#            error("@immutable type: unexpected def.head = ", def.head,
-#                  ", def = ", def)
             error("@immutable type: def = ", def)
         end
         push(newdefs, def)
