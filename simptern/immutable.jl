@@ -88,6 +88,7 @@ function code_immutable_type(ex)
     end
 
     if needs_default_constructor
+        # todo: use exact signature: this gives the wrong dispatch!
         push(newdefs, :(
             ($typename)(args...) = ($quot(immcanon))(new(args...))
         ))
