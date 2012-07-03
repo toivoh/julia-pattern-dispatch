@@ -1,5 +1,6 @@
 
 require("simptern/utils.jl")
+require("simptern/staged.jl")
 
 
 # -- egal ---------------------------------------------------------------------
@@ -37,32 +38,28 @@ hash(x::ImmArray) = hash(x.data)
 
 # -- @immutable ---------------------------------------------------------------
 
-# type ImmNew
-#     d::Dict
-#     typenames::Vector
-# end
-
-# function replace_new(ex::Expr, imn::ImmNew)
-#     if is_expr(ex, :call) && ex.args[1] == :new
-#         fname, fargs = ex.args[1], ex.args[2:end]
-#         @gensym cargs key
-#         quote            
-#             ($cargs) = convert(($asttuple(imn.typenames)), ($asttuple(fargs)))
-#             ($key) = ImmVector{Any}(($cargs)...)            
-#             @setdefault ($quot(imn.d))[($key)] = ($fname)(($cargs)...)
-#         end
-#     else
-#         expr(ex.head, {replace_new(arg, imn) for arg in ex.args})
-#     end
-# end
-# replace_new(ex, imn::ImmNew) = ex
-
-replace_symbol(ex::Symbol, from::Symbol, to::Symbol) = (ex == from ? to : ex)
-function replace_symbol(ex::Expr, from::Symbol, to::Symbol) 
-    expr(ex.head, {replace_symbol(arg, from, to) for arg in ex.args})
+function immcanon{T}(x::T)
+    key = ImmVector{Any}(get_all_fields(x)...)
+    memo = get_immdict(x)
+    @setdefault memo[key] = x
 end
-replace_symbol(ex, from::Symbol, to::Symbol) = ex
 
+@staged function get_all_fields(x)
+    expr(:tuple, { :(x.($quot(name))) for name in x.names })
+end
+@staged function get_immdict(x)
+    quot(Dict{ImmVector,x}())
+end
+
+function replace_new(ex::Expr)
+    ex = expr(ex.head, {replace_new(arg) for arg in ex.args})
+    if is_expr(ex, :call) && ex.args[1] == :new
+        expr(:call, quot(immcanon), ex)
+    else
+        ex
+    end
+end
+replace_new(ex) = ex
 
 macro immutable(ex) 
     code_immutable_type(ex)
@@ -74,47 +71,27 @@ function code_immutable_type(ex)
     typename = (is_expr(ts, :curly) ? ts.args[1] : ts)::Symbol
 
     @expect is_expr(defs, :block)
-    
-    fieldtypes = {}
-    constructors = {}
+
     newdefs = {}
+    needs_default_constructor = true
     for def in defs.args
         if is_fdef(def)
             signature, body = split_fdef(def)
             @expect is_expr(signature, :call)
             if signature.args[1] == typename  # constructor
-                push(constructors, (signature, body))
-                continue
+                needs_default_constructor
+                body = replace_new(body)
+                def = :(($signature)=($body))
             end
         end
-        if isa(def, Symbol);                 push(fieldtypes, quot(Any))
-        elseif is_expr(def, doublecolon, 2); push(fieldtypes, def.args[2]); end
         push(newdefs, def)
     end
 
-    if isempty(constructors)
-        constructors = {(:(($typename)(args...)), :(new(args...)))}
+    if needs_default_constructor
+        push(newdefs, :(
+            ($typename)(args...) = ($quot(immcanon))(new(args...))
+        ))
     end
 
-    memodict = Dict()
-#     imn = ImmNew(memodict, fieldtypes)
-    @gensym immnew key cargs
-    for (signature, body) in constructors
-#        body = replace_new(body, imn)
-        body = replace_symbol(body, :new, immnew)
-        body = quote
-            ($immnew)(args...) = begin
-                ($cargs) = convert(($asttuple(fieldtypes)), args)
-                ($key) = ImmVector{Any}(($cargs)...)            
-                @setdefault ($quot(memodict))[($key)] = new(($cargs)...)
-            end
-            ($body)
-        end
-        push(newdefs, :(($signature)=($body)))
-    end
-
-    quote
-        ($expr(:type, typesig, expr(:block, newdefs)))
-        __immdict(::Type{$typename}) = ($quot(memodict))
-    end
+    expr(:type, typesig, expr(:block, newdefs))
 end
