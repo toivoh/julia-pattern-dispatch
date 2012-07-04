@@ -13,7 +13,7 @@ egal{T<:Tuple}(xs::T, ys::T) = all({egal(x,y) for (x,y) in zip(xs,ys)})
 
 
 # -- ImmArray -----------------------------------------------------------------
-type ImmArray{T,N}
+type ImmArray{T,N} <: AbstractArray
     data::Array{T,N}
 
     ImmArray(x::AbstractArray{T,N}) = new(copy(x))
@@ -28,6 +28,8 @@ immvec{T}(args::T...) = ImmVector{T}(args...)
 ndim{T,N}(x::ImmArray{T,N}) = N
 eltype{T,N}(x::ImmArray{T,N}) = T
 size(x::ImmArray) = size(x.data)
+numel(x::ImmArray) = numel(x.data)
+ref(x::ImmArray, inds...) = ref(x.data, inds...)
 
 function egal(xs::ImmArray, ys::ImmArray)
     (size(xs)==size(ys)) && all(map(egal, xs.data,ys.data))
