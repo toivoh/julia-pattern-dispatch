@@ -73,6 +73,18 @@ function convert{K,V}(::Type{Dict{K,V}}, d::Dict)
 end
 
 
+function meet(nodes::MatchNode...)
+    @expect length(nodes) >= 1
+    guard  = andnode({ node.guard            for node in nodes }...)
+    symtable = merge({ node.symtable         for node in nodes }...)
+    nsyms    =   sum({ length(node.symtable) for node in nodes })
+    if length(symtable) != nsyms
+        error("unimplemented: node unite")
+    end
+    MatchNode(guard, symtable)
+end
+
+
 # -- Helpers ------------------------------------------------------------------
 
 const truenode = AtomNode(true)

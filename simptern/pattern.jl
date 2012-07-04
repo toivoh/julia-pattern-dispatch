@@ -18,9 +18,10 @@ type PVar <: Pattern
     name::Symbol
 end
 
-type TupplePattern <: Pattern
+type TuplePattern <: Pattern
     elements::Vector{Pattern}
 end
+TuplePattern(args...) = TuplePattern(Pattern[args...])
 
 
 function make_net(p::Atom, source::PNode)
@@ -37,7 +38,7 @@ function make_net(p::PVar, source::PNode)
     MatchNode(truenode, {p.name => source})
 end
 
-function make_net(tp::TupplePattern, source::PNode)
+function make_net(tp::TuplePattern, source::PNode)
     gtuple = isanode(source, Tuple)
     source_t = GateNode(source, gtuple)
     
@@ -45,11 +46,11 @@ function make_net(tp::TupplePattern, source::PNode)
     glen = egalnode(len, length(tp.elements))
     source_tlen = GateNode(source_t, glen)
     
-    match = MatchNode(andnode(gtuple, glen))
-    for (p,k) in enumerate(tp.elements)
+    factors = { MatchNode(andnode(gtuple, glen)) }
+    for (pk,k) in enumerate(tp.elements)
         element = funcnode(ref, source_tlen, k)
-        match_k = make_net(p, element)
-        match = match & match_k
+        match_k = make_net(pk, element)
+        push(factors, match_k)
     end
-    match
+    meet(factors...)
 end
