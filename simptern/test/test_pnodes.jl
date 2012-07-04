@@ -31,5 +31,8 @@ sink2 = make_net(arg)[1]
 nodes3 = make_net(arg)
 nodes4 = make_net(arg)
 
+pprintln(code_match(sink))
+
+println()
 @show is(sink, sink2)
 @show [is(n1,n2) for (n1,n2) in zip(nodes3,nodes4)]
