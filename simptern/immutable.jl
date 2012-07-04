@@ -25,11 +25,13 @@ ImmArray{T,N}(x::Array{T,N}) = ImmArray{T,N}(x)
 typealias ImmVector{T} ImmArray{T,1}
 immvec{T}(args::T...) = ImmVector{T}(args...)
 
-ndim{T,N}(x::ImmArray{T,N}) = N
+ndims{T,N}(x::ImmArray{T,N}) = N
 eltype{T,N}(x::ImmArray{T,N}) = T
 size(x::ImmArray) = size(x.data)
 numel(x::ImmArray) = numel(x.data)
 ref(x::ImmArray, inds...) = ref(x.data, inds...)
+
+show(io::IO, x::ImmArray) = print(io, typeof(x), "(", x.data, ")")
 
 function egal(xs::ImmArray, ys::ImmArray)
     (size(xs)==size(ys)) && all(map(egal, xs.data,ys.data))
