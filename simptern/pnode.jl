@@ -38,6 +38,14 @@ subs_links(s::Subs, node::FuncNode) = FuncNode(s[node.args])
 end
 subs_links(s::Subs, node::GateNode) = GateNode(s[node.value],s[node.condition])
 
+type MatchNode <: PNode
+    guard::PNode
+    symtable::Dict{Symbol,PNode}
+
+    MatchNode(guard::PNode, symtable::Dict) = new(guard, symtable)
+end
+MatchNode(g::PNode) = MatchNode(g, Dict{Symbol,PNode}())
+
 
 get_args(node::SourceNode) = ()
 get_args(node::FuncNode) = node.args
@@ -54,12 +62,20 @@ code_node(node::AtomNode) = quot(node.value)
 code_node(::FuncNode, arg_exprs...) = code_apply(arg_exprs...)
 
 
-getkey(node::SourceNode) = node
-getkey(node::FuncNode) = (FuncNode, node.args)
-getkey(node::GateNode) = (GateNode, node.value, node.condition)
+
+function convert{K,V}(::Type{Dict{K,V}}, d::Dict)
+    result = Dict{K,V}()
+    for (k,v) in d
+        @assert !has(result,k)
+        result[k] = v
+    end
+    result
+end
 
 
 # -- Helpers ------------------------------------------------------------------
+
+const truenode = AtomNode(true)
 
 as_pnode(node::PNode) = node
 as_pnode(x) = AtomNode(x)
