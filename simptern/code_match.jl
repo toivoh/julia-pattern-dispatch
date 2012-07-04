@@ -6,15 +6,32 @@ is_true_expr(ex) = (ex == :true) || (ex == quot(true))
 
 type MatchCode
     guards::Set{PNode}
+    nodenames::Dict{PNode,Symbol}
+    fanout::Dict{PNode,Int}
     results::Dict{PNode,Any}
     code::Vector
 
-    MatchCode(guards::Set{PNode}) = new(guards, Dict{PNode,Any}(), {})   
+    function MatchCode(guards::Set{PNode}, nodenames::Dict{PNode,Symbol}) 
+        new(guards, nodenames, Dict{PNode,Int}(), Dict{PNode,Any}(), {})   
+    end
 end
 
+getname(c::MatchCode, node::PNode) = (@setdefault c.nodenames[node] = gensym())
+
+is_simple_expr(ex::Expr) = is_true_expr(ex) || is_expr(ex, :quote)
+is_simple_expr(ex) = true
+
 function get_result(c::MatchCode, node::PNode)
-    if has(c.results, node); return c.results[node]
-    else;                    return c.results[node] = code_match(c, node)
+    if has(c.results, node)
+        return c.results[node]
+    else
+        ex = code_match(c, node)
+        if (c.fanout[node] > 1) && (!is_simple_expr(ex))
+            name = getname(c, node)
+            push(c.code, :(($name)=($ex)))
+            ex = name
+        end
+        return c.results[node] = ex
     end
 end
 
@@ -28,24 +45,33 @@ function emit_guard(c::MatchCode, pred_ex)
     nothing
 end
 
+function mark_fanout(c::MatchCode, node::PNode)
+    fanout = c.fanout[node] = get(c.fanout, node, 0) + 1
+    if fanout > 1;  return;  end
+    for arg in get_links(node)
+        mark_fanout(c, arg)
+    end
+end
 
+code_match(sink::PNode) = code_match(MatchNode(sink))
 function code_match(match::MatchNode)
     guards = get_guards(match.guard)
-    c = MatchCode(guards)
+
+    nodenames = Dict{PNode,Symbol}()
+    for (k,v) in match.symtable;  nodenames[v]=k;  end
+
+    c = MatchCode(guards, nodenames)
+    mark_fanout(c, match)
     get_result(c, match.guard)
     for (name,node) in match.symtable
         ex = get_result(c, node)
-        push(c.code, :(($name)=($ex)))
+        if ex != name
+            push(c.code, :(($name)=($ex)))
+        end
     end
     expr(:block, c.code)
 end
 
-function code_match(sink::PNode)
-    guards = get_guards(sink)
-    c = MatchCode(guards)
-    get_result(c, sink)
-    expr(:block, c.code)
-end
 
 function code_match(c::MatchCode, node::GateNode)
     cond_ex = get_result(c, node.condition)

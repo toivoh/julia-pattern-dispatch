@@ -53,6 +53,7 @@ get_args(node::FuncNode) = node.args
 get_links(node::SourceNode) = ()
 get_links(node::FuncNode) = node.args
 get_links(node::GateNode) = (node.value, node.condition)
+get_links(node::MatchNode) = {node.guard, values(node.symtable)...}
 
 
 code_apply(arg_exprs...) = :(($arg_exprs[1])($arg_exprs[2:end]...))
