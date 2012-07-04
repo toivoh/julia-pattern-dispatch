@@ -29,6 +29,17 @@ function emit_guard(c::MatchCode, pred_ex)
 end
 
 
+function code_match(match::MatchNode)
+    guards = get_guards(match.guard)
+    c = MatchCode(guards)
+    get_result(c, match.guard)
+    for (name,node) in match.symtable
+        ex = get_result(c, node)
+        push(c.code, :(($name)=($ex)))
+    end
+    expr(:block, c.code)
+end
+
 function code_match(sink::PNode)
     guards = get_guards(sink)
     c = MatchCode(guards)
