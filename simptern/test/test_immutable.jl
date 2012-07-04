@@ -30,9 +30,17 @@ end
 println()
 @show is(T(1),T(1))
 @show is(T(1),T(1.0))
-@show is(T(1),T(2))
+@show !is(T(1),T(2))
 
 println()
 @show is(T2(1),T2(1))
-@show is(T2(1),T2(1.0))
-@show is(T2(1),T2(2))
+@show !is(T2(1),T2(1.0))
+@show !is(T2(1),T2(2))
+
+@assert is(T(1),T(1))
+@assert is(T(1),T(1.0))
+@assert !is(T(1),T(2))
+
+@assert is(T2(1),T2(1))
+@assert !is(T2(1),T2(1.0))
+@assert !is(T2(1),T2(2))
