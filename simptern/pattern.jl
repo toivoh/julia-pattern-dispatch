@@ -23,6 +23,10 @@ type TuplePattern <: Pattern
 end
 TuplePattern(args...) = TuplePattern(Pattern[args...])
 
+type ProductPattern <: Pattern
+    factors::Vector{Pattern}
+end
+ProductPattern(args...) = ProductPattern(Pattern[args...])
 
 function make_net(p::Atom, source::PNode)
     g = egalnode(source, p.value)
@@ -53,4 +57,8 @@ function make_net(tp::TuplePattern, source::PNode)
         push(factors, match_k)
     end
     meet(factors...)
+end
+
+function make_net(p::ProductPattern, source::PNode)
+    meet({ make_net(factor, source) for factor in p.factors }...)
 end

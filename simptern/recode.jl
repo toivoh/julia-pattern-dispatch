@@ -30,14 +30,16 @@ function recode_patex(c::RPContext, ex::Expr)
         if nargs==1
             return :(TypeGuard($args[1]))
         elseif nargs==2
-            error("unimplemented: x::T")
+            recoded_arg = recode_patex(c, args[1])
+            :(ProductPattern(($recoded_arg),TypeGuard($args[2])))
+#            error("unimplemented: x::T")
         end 
     elseif head == :tuple
         recoded_args = recode_patex(c, args)
         return :(TuplePattern($recoded_args...))
-#     elseif (head == :call) && (args[1] == :~) && (nargs == 3)
-#         recoded_args = recode_patex(c,args)
-#         return :(unite(($quot(c.s)), ($recoded_args[2]),($recoded_args[3])))
+    elseif (head == :call) && (args[1] == :~) && (nargs == 3)
+        recoded_args = recode_patex(c,args)
+        return :(ProductPattern(($recoded_args[2]),($recoded_args[3])))
     elseif contains([:call, :ref, :curly], head)
         if head == :call
 #             if args[1] == :pat
