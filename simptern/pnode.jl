@@ -28,7 +28,6 @@ subs_links(s::Subs, node::SourceNode) = node
 
 @immutable type FuncNode <: PNode
     args::ImmVector{PNode}
-    FuncNode(args::ImmVector{PNode}) = new(args)
 end
 FuncNode(args...) = FuncNode(ImmVector{PNode}(args...))
 subs_links(s::Subs, node::FuncNode) = FuncNode(s[node.args])
@@ -36,8 +35,6 @@ subs_links(s::Subs, node::FuncNode) = FuncNode(s[node.args])
 @immutable type GateNode <: PNode
     value::PNode
     condition::PNode
-
-    GateNode(value::PNode, condition::PNode) = new(value, condition)
 end
 subs_links(s::Subs, node::GateNode) = GateNode(s[node.value],s[node.condition])
 
