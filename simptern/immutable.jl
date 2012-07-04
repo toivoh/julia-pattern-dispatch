@@ -72,7 +72,7 @@ function code_immutable_type(ex)
 
     @expect is_expr(defs, :block)
 
-    newdefs = {}
+    fielddefs, newdefs = {}, {}
     needs_default_constructor = true
     for def in defs.args
         if is_fdef(def)
@@ -83,14 +83,16 @@ function code_immutable_type(ex)
                 body = replace_new(body)
                 def = :(($signature)=($body))
             end
+        elseif isa(def, Symbol) || is_expr(def, doublecolon, 2)
+            push(fielddefs, def)
         end
+
         push(newdefs, def)
     end
 
     if needs_default_constructor
-        # todo: use exact signature: this gives the wrong dispatch!
         push(newdefs, :(
-            ($typename)(args...) = ($quot(immcanon))(new(args...))
+            ($typename)($fielddefs...) = ($quot(immcanon))(new($fielddefs...))
         ))
     end
 
