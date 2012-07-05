@@ -46,6 +46,8 @@ type MatchNode <: PNode
 end
 MatchNode(g::PNode) = MatchNode(g, Dict{Symbol,PNode}())
 
+get_symbol_names(node::MatchNode) = keys(node.symtable)
+
 
 get_args(node::SourceNode) = ()
 get_args(node::FuncNode) = node.args
