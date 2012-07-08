@@ -66,13 +66,15 @@ code_node(::FuncNode, arg_exprs...) = code_apply(arg_exprs...)
 
 
 
-function convert{K,V}(::Type{Dict{K,V}}, d::Dict)
-    result = Dict{K,V}()
-    for (k,v) in d
-        @assert !has(result,k)
-        result[k] = v
+function convert{Kd,Vd,Ks}(::Type{Dict{Kd,Vd}}, d::Dict{Ks})
+    if !(Ks<:Kd)
+        error("convert: can only widen key type for Dict")
     end
-    result
+    dest = Dict{Kd,Vd}(length(d))
+    for (k,v) in d
+        dest[k] = v
+    end
+    dest
 end
 
 
