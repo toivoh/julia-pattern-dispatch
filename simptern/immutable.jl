@@ -31,6 +31,12 @@ size(x::ImmArray) = size(x.data)
 numel(x::ImmArray) = numel(x.data)
 ref(x::ImmArray, inds...) = ref(x.data, inds...)
 
+mapT(T, f::Function) = error("mapT: need at least one function argument!")
+mapT(T, f::Function, xs::Array...) = (d=similar(xs[1],T); map_to(d,f,xs...); d)
+function mapT(T, f::Function, xs::ImmArray...) 
+    ImmArray(mapT(T, f, {x.data for x in xs}...))
+end
+
 show(io::IO, x::ImmArray) = print(io, typeof(x), "(", x.data, ")")
 
 function egal(xs::ImmArray, ys::ImmArray)

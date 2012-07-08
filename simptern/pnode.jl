@@ -5,6 +5,7 @@ require("simptern/immutable.jl")
 abstract Subs
 
 ref(s::Subs, args::Tuple) = map(x->s[x], args)
+ref{T}(s::Subs, args::ImmVector{T}) = mapT(T, x->s[x], args)
 
 
 # -- PNode --------------------------------------------------------------------
