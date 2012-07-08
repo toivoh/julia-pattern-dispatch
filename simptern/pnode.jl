@@ -130,3 +130,15 @@ function get_guards(visited::Set{PNode}, guards::Set{PNode}, node::PNode)
     end
     nothing
 end
+
+# -- EndoMap ------------------------------------------------------------------
+
+type EndoMap{T} <: Subs
+    memo::Dict{PNode,PNode}
+    data::T
+
+    EndoMap(args...) = new(Dict{PNode,PNode}(), T(args...))
+end
+
+ref(m::EndoMap, node::PNode) = @setdefault m.memo[node] = evaluate(m, node)
+evaluate(m::EndoMap, node::PNode) = evalkernel(m, subs_links(m, node))
