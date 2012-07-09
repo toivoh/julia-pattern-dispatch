@@ -7,12 +7,14 @@ is_true_expr(ex) = (ex == :true) || (ex == quot(true))
 type MatchCode
     guards::Set{PNode}
     nodenames::Dict{PNode,Symbol}
+    nomatch_ret  # expr to be returned if match fails
+
     fanout::Dict{PNode,Int}
     results::Dict{PNode,Any}
     code::Vector
 
-    function MatchCode(guards::Set{PNode}, nodenames::Dict{PNode,Symbol}) 
-        new(guards, nodenames, Dict{PNode,Int}(), Dict{PNode,Any}(), {})   
+    function MatchCode(guards::Set{PNode}, nodenames::Dict{PNode,Symbol}, nmr) 
+        new(guards, nodenames, nmr, Dict{PNode,Int}(), Dict{PNode,Any}(), {})
     end
 end
 
@@ -39,7 +41,7 @@ function emit_guard(c::MatchCode, pred_ex)
     if is_true_expr(pred_ex); return; end
     push(c.code, :( 
         if !($pred_ex)
-            return false
+            return ($c.nomatch_ret)
         end
     ))
     nothing
@@ -53,14 +55,15 @@ function mark_fanout(c::MatchCode, node::PNode)
     end
 end
 
-code_match(sink::PNode) = code_match(MatchNode(sink))
-function code_match(match::MatchNode)
+code_match(sink::PNode, args...) = code_match(MatchNode(sink), args...)
+code_match(match::MatchNode) = code_match(match, quot(false))
+function code_match(match::MatchNode, nomatch_ret)
     guards = get_guards(match.guard)
 
     nodenames = Dict{PNode,Symbol}()
     for (k,v) in match.symtable;  nodenames[v]=k;  end
 
-    c = MatchCode(guards, nodenames)
+    c = MatchCode(guards, nodenames, nomatch_ret)
     mark_fanout(c, match)
     get_result(c, match.guard)
     for (name,node) in match.symtable
