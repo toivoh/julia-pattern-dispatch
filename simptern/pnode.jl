@@ -104,6 +104,9 @@ egalnode(x, y) = funcnode(egal, x, y)
 isanode(x, T) = funcnode(isa, x, T)
 andnode(args...) = funcnode(all, args...)
 
+guard(node::PNode) = MatchNode(node)
+bind(name::Symbol, node::PNode) = MatchNode(truenode, {name=>node})
+
 is_andnode(node::FuncNode) = node.args[1] == AtomNode(all)
 is_andnode(node::PNode) = false
 function get_and_factors(node::PNode)
