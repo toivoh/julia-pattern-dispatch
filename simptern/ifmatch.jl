@@ -1,5 +1,5 @@
 
-require("simptern/recode.jl")
+require("simptern/translate.jl")
 require("simptern/code_match.jl")
 
 macro ifmatch(ex)
@@ -24,7 +24,7 @@ function code_ifmatch_let(pattern_ex, arg_ex, body)
     pattern_ex = recode_patex(pattern_ex)
     pattern = eval(pattern_ex)
 
-    matchnode = make_net(pattern, VarNode(arg_name))
+    matchnode = makenet(VarNode(arg_name), pattern)
     varnames = get_symbol_names(matchnode)
     code = code_match(matchnode)
     :(
