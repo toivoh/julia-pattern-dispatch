@@ -36,7 +36,7 @@ nevermatches(p::Pattern) = is_false_expr(p.match.guard)
 
 # strip symbol table, keep guard
 # todo: unorder the DAG
-feas(p::Pattern) = Pattern(p.arg, MatchNode(p.match.guard))
+feas(p::Pattern) = Pattern(p.arg, MatchNode(unorder(p.match.guard)))
 
 
 function get_comp_guards(p::Pattern) 
@@ -53,3 +53,13 @@ end
 > (p::Pattern, q::Pattern) = compare_guards(set_lt, p, q)
 <=(p::Pattern, q::Pattern) = q >= p
 < (p::Pattern, q::Pattern) = q >  p
+
+
+type Unorder; end
+typealias UnorderMap EndoMap{Unorder}
+
+evalkernel(m::UnorderMap, node::GateNode) = node.value
+evalkernel(m::UnorderMap, node::PNode) = node
+
+unorder(node::PNode) = UnorderMap()[node]
+
