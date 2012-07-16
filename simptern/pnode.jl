@@ -129,10 +129,16 @@ function get_guards(visited::Set{PNode}, guards::Set{PNode}, node::PNode)
             get_guards(visited, guards, factor)
         end
     else
-        add(guards, node)
+        addguard(guards, node)
     end
     nothing
 end
+function addguard(guards::Set{PNode}, node::AtomNode)
+    if !is_true_expr(node.value);  add(guards, node);  end
+end
+addguard(guards::Set{PNode}, node::PNode) = add(guards, node)
+
+
 
 # -- EndoMap ------------------------------------------------------------------
 
