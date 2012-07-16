@@ -1,6 +1,5 @@
 
-require("simptern/translate.jl")
-require("simptern/code_match.jl")
+require("simptern/pattern.jl")
 
 macro ifmatch(ex)
     code_ifmatch_let(ex)
@@ -19,14 +18,12 @@ function code_ifmatch_let(ex)
 end
 
 function code_ifmatch_let(pattern_ex, arg_ex, body)
-    arg_name = gensym("arg")
-    
     pattern_ex = recode_patex(pattern_ex)
-    pattern = eval(pattern_ex)
+    p = pattern(eval(pattern_ex))
 
-    matchnode = makenet(VarNode(arg_name), pattern)
-    varnames = get_symbol_names(matchnode)
-    code = code_match(matchnode)
+    arg_name = get_argname(p)
+    varnames = get_varnames(p)
+    code = code_match(p)
     :(
         let ($arg_name)=($arg_ex)
             local ($varnames...)
