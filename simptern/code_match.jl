@@ -1,8 +1,6 @@
 
 require("simptern/pnode.jl")
 
-is_true_expr(ex) = (ex == :true) || (ex == quot(true))
-
 
 type MatchCode
     guards::Set{PNode}

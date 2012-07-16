@@ -10,6 +10,9 @@ function is_expr(ex, head::Symbol, nargs::Int)
     is_expr(ex, head) && length(ex.args) == nargs
 end
 
+is_true_expr(ex)  = (ex == :true)  || (ex == quot(true))
+is_false_expr(ex) = (ex == :false) || (ex == quot(false))
+
 macro expect(pred)
     quote
         ($pred) ? nothing : error("expected: ", ($string(pred))", == true")
@@ -48,6 +51,12 @@ macro setdefault(ex)
         end
     end
 end
+
+set_le(s::Set, t::Set) = allp(x->has(t,x), s)
+set_lt(s::Set, t::Set) = (length(s)< length(t)) && set_le(s, t)
+set_eq(s::Set, t::Set) = (length(s)==length(t)) && set_le(s, t)
+set_ge(s::Set, t::Set) = set_le(t, s)
+set_gt(s::Set, t::Set) = set_lt(t, s)
 
 macro show(ex)
     :(println(($string(ex)), "\t= ", sshow($ex)) )
