@@ -13,7 +13,7 @@ abstract PNode
 abstract   SourceNode <: PNode
 
 ## SourceNode:s
-type VarNode <: SourceNode
+@immutable type VarNode <: SourceNode
     name::Symbol
 end
 @immutable type AtomNode{T} <: SourceNode
