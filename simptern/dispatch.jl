@@ -64,7 +64,7 @@ function add(mt::PatternMethodTable, m::PatternMethod)
     # insert signature in ascending topological order, as late as possible
     i = findfirst({{feas(sig) <= feas(mk.signature) for mk in ms}..., true})
     if (i <= n) && (feas(sig) == feas(ms[i].signature))
-        mt.methods[k] = m  # equal signature ==> replace
+        mt.methods[i] = m  # equal signature ==> replace
         return
     end
     ms = mt.methods = PatternMethod[ms[1:i-1]..., m, ms[i:n]...]
