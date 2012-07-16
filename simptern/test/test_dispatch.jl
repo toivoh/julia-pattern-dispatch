@@ -17,6 +17,7 @@ require("simptern/dispatch.jl")
 @test is(nothing, f2((1,)) )
 @test is(nothing, f2((1,2,3)) )
 
+
 @pattern f3(atom(nothing)) = 1
 @pattern f3(x) = 2
 
@@ -24,3 +25,12 @@ require("simptern/dispatch.jl")
 @test is(f3(1),2)
 @test is(f3(:x),2)
 @test is(f3("hello"),2)
+
+
+@pattern f4(x::Int) = 1
+@pattern f4(x::Float) = 2
+@pattern f4(x) = 3
+
+@test is(f4(4), 1)
+@test is(f4(4.0), 2)
+@test is(f4("4"), 3)
