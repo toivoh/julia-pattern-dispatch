@@ -1,33 +1,29 @@
 
-require("simptern/pnode.jl")
-require("simptern/unify.jl")
-require("simptern/recode.jl")
-require("simptern/code_match.jl")
+require("simptern/pattern.jl")
 
 
 # -- @patmethod ---------------------------------------------------------------
 
-const __patmethod_arg = gensym("arg")
-
 type PatternMethod
-    signature::MatchNode
+    signature::Pattern
     body
 
     dispfun::Function
 end
-function patmethod(sigpattern::Pattern, body)
-    signature = make_net(sigpattern, VarNode(__patmethod_arg))
+patmethod(rawsig, body) = patmethod(pattern(rawsig), body)
+function patmethod(signature::Pattern, body)
     dispfun = create_patmethod_dispfun(signature, body)
     PatternMethod(signature, body, dispfun)
 end
 
-function create_patmethod_dispfun(signature::MatchNode, body)
+function create_patmethod_dispfun(signature::Pattern, body)
     eval(code_patmethod_dispfun(signature, body))
 end
-function code_patmethod_dispfun(signature::MatchNode, body)   
+function code_patmethod_dispfun(signature::Pattern, body)   
 #    varnames = get_symbol_names(matchnode)
+    argname = get_argname(signature)
     code = code_match(signature, :(false,nothing))
-    :( (($__patmethod_arg)...)->(begin
+    :( (($argname)...)->(begin
         ($code)
         (true, ($body))
     end))
