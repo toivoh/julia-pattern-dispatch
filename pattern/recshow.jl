@@ -76,6 +76,10 @@ end
 recshow(arg) = recshow(OUTPUT_STREAM, arg)
 function recshow(io::IO, arg)
     p = record_show(arg)
+    if !isa(p, ObjRec)
+        println(io, p)
+        return
+    end
     p.name = :arg
     c = RecShow(io, {p})
     while !isempty(c.queue)
