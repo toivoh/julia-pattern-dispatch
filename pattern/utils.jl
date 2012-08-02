@@ -1,4 +1,8 @@
 
+const doublecolon = symbol("::")
+
+quot(ex) = expr(:quote, ex)
+
 macro show(ex)
     :(println(($string(ex)), "\t= ", sshow($ex)) )
 end

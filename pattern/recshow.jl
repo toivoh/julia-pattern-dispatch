@@ -15,11 +15,8 @@ type RecorderIO <: CustomIO
 end
 RecorderIO(dest::ObjRec) = RecorderIO(dest, ObjectIdDict())
 
-##  Methods to redirect strings etc output to a RecorderIO to one place ##
-print(io::RecorderIO, c::Char) = print_char(io, c)
-for S in [:ASCIIString, :UTF8String, :RopeString, :String]
-    @eval print(io::RecorderIO, s::($S)) = print_str(io, s)
-end
+## Redirect direct output to a RecorderIO into print_str and print_char
+@customio RecorderIO
 
 
 print_str(io::RecorderIO, s::String) = (push(io.dest.parts, s); nothing)
