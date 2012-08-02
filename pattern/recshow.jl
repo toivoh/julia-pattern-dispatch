@@ -30,12 +30,13 @@ print(io::RecorderIO, x) = (push(io.dest.parts, record_show(io, x)); nothing)
 function record_show(io::RecorderIO, x)
     if has(io.objects, x)
         p = io.objects[x]
-        if is(p.name, false);  p.name = true;  end
+        if isa(p, ObjRec) && is(p.name, false);  p.name = true;  end
         p
     else
         io = enter(io, x)
-        show(io, x)
-        io.dest
+        show(io, x)        
+#        io.dest
+        return io.objects[x] = simplify(io.dest)
     end
 end
 
@@ -49,18 +50,17 @@ end
 record_show(arg) = record_show(RecorderIO(ObjRec(arg)), arg)
 
 
-function joinstrings!(xs::Vector)
-    # todo: gather consecutive string to join instead
-    k = 1
-    while k<length(xs)
-        if isa(xs[k], String) && isa(xs[k+1], String)
-            xs[k] = strcat(xs[k], xs[k+1])
-            del(xs, k+1)
-        else
-            k += 1
+function simplify(p::ObjRec)
+    if allp(part->isa(part, String), p.parts)
+        s = strcat(p.parts...)
+        if strlen(s) <= 10
+            return s
         end
+        p.parts = [s]
     end
+    p
 end
+
 
 
 
