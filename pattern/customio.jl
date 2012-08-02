@@ -53,8 +53,8 @@ function default_show(io::IO, T::CompositeKind, x)
                   "in $(typeof(x))")
         end
     end
-#    print(io, sshow(T), enclose("(", comma_list(values...), ")"))
-    print(io, sshow(T), "("); print_comma_list(io, values...); print(io, ")")
+    print(io, sshow(T), enclose("(", comma_list(values...), ")"))
+#    print(io, sshow(T), "("); print_comma_list(io, values...); print(io, ")")
 end
 
 function print_comma_list(io::IO, args...)
