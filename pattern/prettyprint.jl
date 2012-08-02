@@ -40,6 +40,32 @@ indent(args...) = PrintNode(IndentEnv(), args...)
 enclose(args...) = defer_print(args[1], indent(args[2:end-1]...), args[end])
 
 
+# ---- PrintExpander ----------------------------------------------------------
+
+type PrintExpander <: CustomIO
+    parts::Vector
+    PrintExpander() = new({})
+end
+@customio PrintExpander
+
+print(io::PrintExpander, node::GroupNode) = print(io, node.items...)
+function print(io::PrintExpander, node::PrintNode)
+    items = vcat({expand_print(item) for item in node.items}...)
+    push(io.parts, PrintNode(node.env, items...))
+    nothing
+end
+ioprint(io::PrintExpander, arg::String) = (push(io.parts, arg); nothing)
+ioprint(io::PrintExpander, arg) = (push(io.parts, arg); nothing)
+
+function expand_print(arg)
+    io = PrintExpander()
+    print(io, arg)
+    io.parts
+end
+
+
+# ---- PrettySimple -----------------------------------------------------------
+
 type PrettySimple <: CustomIO
     sink::IO
     indent::Int
