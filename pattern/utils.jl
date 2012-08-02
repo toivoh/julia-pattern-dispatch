@@ -3,6 +3,13 @@ const doublecolon = symbol("::")
 
 quot(ex) = expr(:quote, ex)
 
+macro expect(pred)
+    quote
+        ($pred) ? nothing : error("expected: ", ($string(pred))", == true")
+    end
+end
+
+
 macro show(ex)
     :(println(($string(ex)), "\t= ", sshow($ex)) )
 end

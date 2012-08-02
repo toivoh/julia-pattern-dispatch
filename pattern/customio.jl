@@ -66,10 +66,12 @@ function default_show(io, T::CompositeKind, x)
 end
 
 function print_comma_list(io::IO, args...)
+    print(io, BeginEnv(indentenv))
     first = true
     for arg in args
         if !first;  print(io, ", ");  end
         print(io, arg)
         first = false
     end
+    print(io, EndEnv(indentenv))
 end
