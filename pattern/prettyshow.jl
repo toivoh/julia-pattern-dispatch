@@ -75,7 +75,7 @@ function rawprint(io::PrettyTerm, c::Char)
     end
 end
 
-function print_char(io::PrettyTerm, c::Char)
+function ioprint(io::PrettyTerm, c::Char)
     if io.wrap && (io.xpos >= io.width)  # wrap
         rawprint(io, '\n') 
     end  

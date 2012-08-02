@@ -15,12 +15,12 @@ type RecorderIO <: CustomIO
 end
 RecorderIO(dest::ObjRec) = RecorderIO(dest, ObjectIdDict())
 
-## Redirect direct output to a RecorderIO into print_str and print_char
+## Redirect direct output to a RecorderIO into ioprint
 @customio RecorderIO
 
 
-print_str(io::RecorderIO, s::String) = (push(io.dest.parts, s); nothing)
-print_char(io::RecorderIO, c::Char) = print_str(io, string(c))
+ioprint(io::RecorderIO, s::String) = (push(io.dest.parts, s); nothing)
+ioprint(io::RecorderIO, c::Char) = ioprint(io, string(c))
 
 print(io::RecorderIO, x) = (push(io.dest.parts, record_show(io, x)); nothing)
 
