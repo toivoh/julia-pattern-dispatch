@@ -5,7 +5,7 @@ type ObjRec
     name
     parts::Vector
 
-    ObjRec() = new(nothing, {})
+    ObjRec() = new(false, {})
 end
 
 type RecorderIO <: CustomIO
@@ -29,7 +29,7 @@ print(io::RecorderIO, x) = (push(io.dest.parts, record_show(io, x)); nothing)
 function record_show(io::RecorderIO, x)
     if has(io.objects, x)
         p = io.objects[x]
-        if is(p.name, nothing);  p.name = gensym();  end
+        if is(p.name, false);  p.name = true;  end
         p
     else
         io = enter(io, x)
@@ -67,8 +67,9 @@ type RecShow
     io::IO
     printed::Set{ObjRec}
     queue::Vector{ObjRec}
+    numnames::Integer
 
-    RecShow(io::IO, queue) = new(io, Set{ObjRec}(), ObjRec[queue...])
+    RecShow(io::IO, queue) = new(io, Set{ObjRec}(), ObjRec[queue...], 0)
 end
 
 recshow(arg) = recshow(OUTPUT_STREAM, arg)
@@ -88,14 +89,16 @@ recprint(c::RecShow, arg::String) = print(c.io, arg)
 recprint(c::RecShow, args...) = (for arg in args; recprint(c, arg); end)
 
 function recprint(c::RecShow, p::ObjRec)
-    if is(p.name, nothing)
+    if is(p.name, false)
         recprint(c, p.parts...)
     else
-        print(c.io, p.name) # print the name
         if !has(c.printed, p)
             add(c.printed, p)
             push(c.queue, p)
+            c.numnames += 1
+            p.name = "_x$(c.numnames)"
         end
+        print(c.io, p.name) # print the name
     end
 end
 
