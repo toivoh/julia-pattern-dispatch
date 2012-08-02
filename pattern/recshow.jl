@@ -2,17 +2,18 @@
 require("pattern/customio.jl")
 
 type ObjRec
+    obj
     name
     parts::Vector
 
-    ObjRec() = new(false, {})
+    ObjRec(obj) = new(obj, false, {})
 end
 
 type RecorderIO <: CustomIO
     dest::ObjRec
     objects::ObjectIdDict
 end
-RecorderIO() = RecorderIO(ObjRec(), ObjectIdDict())
+RecorderIO(dest::ObjRec) = RecorderIO(dest, ObjectIdDict())
 
 ##  Methods to redirect strings etc output to a RecorderIO to one place ##
 print(io::RecorderIO, c::Char) = print_char(io, c)
@@ -40,12 +41,12 @@ end
 
 function enter(io::RecorderIO, x)
     @assert !has(io.objects, x)
-    dest = ObjRec()
+    dest = ObjRec(x)
     io.objects[x] = dest
     RecorderIO(dest, io.objects)
 end
 
-record_show(arg) = record_show(RecorderIO(), arg)
+record_show(arg) = record_show(RecorderIO(ObjRec(arg)), arg)
 
 
 function joinstrings!(xs::Vector)
