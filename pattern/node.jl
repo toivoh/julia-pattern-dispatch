@@ -1,4 +1,6 @@
 
+require("pattern/customio.jl")
+
 abstract Node
 abstract   Result <: Node
 abstract     Computation <: Result
@@ -21,6 +23,8 @@ end
 Atom{T}(x::T) = Atom{T}(x)
 type Arg <: Source
 end
+
+show(io::IO, node::Atom) = print(io, "Atom(", node.value, ")")
 
 links(node::Source) = ()
 subslinks(s::Subs, node::Source) = node
@@ -53,7 +57,12 @@ show(io::IO, node::Apply) = showfunc(io, node, "Apply")
 show(io::IO, node::Isa)   = showfunc(io, node, "Isa")
 show(io::IO, node::Egal)  = showfunc(io, node, "Egal")
 show(io::IO, node::And)   = showfunc(io, node, "And")
-showfunc(io::IO, node::Func, name::String) = print(io,name,tuple(node.args...))
+#showfunc(io::IO, node::Func, name::String) = print(io,name,tuple(node.args...))
+function showfunc(io::IO, node::Func, name::String)
+    print(io,name,"(")
+    print_comma_list(io, node.args...)
+    print(io, ")")
+end
 
 
 ## Gated computations ##
@@ -105,7 +114,11 @@ function subslinks{T}(s::Subs, node::NodeSet{T})
     NodeSet{T}(Set{T}( {s[x] for x in node.nodes}... ))
 end
 
-#show{T}(io::IO, nset::NodeSet{T}) = print(io, "NodeSet{$T}", tuple(nset.nodes...))
+function show(io::IO, nodes::NodeSet)
+    print(io, "NodeSet(")
+    print_comma_list(io, nodes.nodes...)
+    print(io, ")")
+end
 
 type Link{T<:Node} <: Node
     target::T
