@@ -11,8 +11,9 @@ show(io::CustomIO, s::Symbol) = print(io, string(s))
 print_str(io::CustomIO, s::String) = (for c in s; print_char(io, c); end)
 
 
-show(io::CustomIO, x::Float64) = print(io, sshow(x))
-show(io::CustomIO, x::Float32) = print(io, sshow(x))
+write(io::CustomIO, s::ASCIIString) = print_str(io, s)
+
+
 # fix to avoid jl_show_any on CustomIO (segfaults)
 function show(io, x) 
     io::IO
@@ -47,5 +48,14 @@ function default_show(io, T::CompositeKind, x)
         end
     end
 #    print(io, sshow(T), enclose("(", comma_list(values...), ")"))
-    print(io, sshow(T), tuple(values...))
+    print(io, sshow(T), "("); print_comma_list(io, values...); print(io, ")")
+end
+
+function print_comma_list(io::IO, args...)
+    first = true
+    for arg in args
+        if !first;  print(io, ", ");  end
+        print(io, arg)
+        first = false
+    end
 end
