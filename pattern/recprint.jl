@@ -26,19 +26,40 @@ function enter(objects::ObjectIdDict, obj)
     PrintRecorder(dest, objects)
 end
 
+record(io::PrintRecorder, arg::Char) = record(io, string(arg))
+function record(io::PrintRecorder, arg::String) 
+    if length(arg) == 0 return end
 
-ioprint(io::PrintRecorder, arg) = (push(io.dest.items, arg); nothing)
+    items = io.dest.items
+    if (length(items) > 0) && isa(items[end], String)
+        items[end] = strcat(items[end], arg)
+    else
+        push(io.dest.items, arg)
+    end
+    nothing
+end
+function record(io::PrintRecorder, node::PrintNode)
+    if length(node.items) == 0 return end        
+    push(io.dest.items, node)
+    nothing
+end
+record(io::PrintRecorder, arg) = (push(io.dest.items, arg); nothing)
 
+
+ioprint(io::PrintRecorder, arg) = record(io, arg)
+
+print(io::PrintRecorder, node::GroupNode) = print(io, node.items...)
 function print(io::PrintRecorder, node::PrintNode)
     dest = PrintNode(node.env)
-    push(io.dest.items, dest)
 
     node_io = PrintRecorder(dest, io.objects)
     print(node_io, node.items...)
+
+    record(io, dest)
 end
 
 function print(io::PrintRecorder, x) 
-    push(io.dest.items, record_show(io.objects, x))
+    record(io, record_show(io.objects, x))
     nothing
 end
 
@@ -57,7 +78,13 @@ end
 
 record_show(arg) = record_show(ObjectIdDict(), arg)
 
+function isshort(node::PrintNode) 
+    items = node.items
+    (length(items) == 1) && isa(items[1], String) && (length(items[1]) <= 10)
+end
+
 function treeify(topnodes::Vector{ObjNode}, node::ObjNode)
+    if isshort(node) node.env.reused = false end
     if is(node.env.reused, false)
         return treeify(topnodes, defer_print(node.items...))    
     end

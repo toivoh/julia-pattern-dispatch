@@ -1,15 +1,7 @@
 
 require("pattern/recprint.jl")
+require("pattern/recode.jl")
 
+net=tuplepat(atompat(1),varpat(:x),typepat(Int))(Arg())
 
-type T
-    x
-    y
-end
-
-t = T(1,2)
-s = T(t,t)
-
-rec = record_show(s)
-
-
+recshow(net)
