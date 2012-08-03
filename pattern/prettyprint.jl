@@ -109,3 +109,32 @@ pprint(args...) = pprint(OUTPUT_STREAM, args...)
 pshow(io::PrettySimple, args...) = show(io, args...)
 pshow(io::IO, args...) = show(pretty(io), args...)
 pshow(args...) = pshow(OUTPUT_STREAM, args...)
+
+
+peel(node::PrintNode) = length(node.items) == 1 ? node.items[1] : node
+peel(arg) = arg
+
+function undent(width::Int, node::PrintNode)
+    if isa(node, IndentNode)
+        width -= 2
+    end
+    items = {undent(width, item) for item in node.items}
+    
+    items2 = {peel(item) for item in items}
+
+#     if all({isa(item, String) for item in items}) && 
+#        (sum({strlen(item) for item in items}) < width)
+#         return strcat(items...)
+#     end
+    if all({isa(item, String) for item in items2})
+        s = strcat(items2...)
+        if !contains(s, '\n') && (strlen(s) < width)
+#             @show s
+#             @show width
+             return PrintNode(node.env, s)
+        end
+    end
+    PrintNode(node.env, items...)
+end
+
+undent(width::Int, arg) = arg

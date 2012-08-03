@@ -112,8 +112,10 @@ function treeify(node::ObjNode)
     k = 1
     while k <= length(topnodes)
         tree = treeify(topnodes, defer_print(topnodes[k].items...))
-        push(toprint, defer_print(topnodes[k].env.reused, " =", indent(tree)))
 #        push(toprint, defer_print(topnodes[k].env.reused, " =\n", tree, '\n'))
+         push(toprint, defer_print(topnodes[k].env.reused, " =", indent(tree)))
+
+#        push(toprint, defer_print(topnodes[k].env.reused, " =\n", indent(tree), '\n'))
         k += 1
     end
     
@@ -125,3 +127,9 @@ recshow(arg) = recshow(OUTPUT_STREAM, arg)
 function recshow(io::IO, arg)
     pprint(io, treeify(record_show(arg)))
 end
+
+
+function recshow2(io::IO, arg)
+    pprint(io, undent(50,treeify(record_show(arg))))
+end
+recshow2(arg) = recshow2(OUTPUT_STREAM, arg)
