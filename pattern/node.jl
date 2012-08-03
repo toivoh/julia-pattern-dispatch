@@ -1,5 +1,5 @@
 
-require("pattern/customio.jl")
+require("pattern/prettyprint.jl")
 
 abstract Node
 abstract   Result <: Node
@@ -59,9 +59,7 @@ show(io::IO, node::Egal)  = showfunc(io, node, "Egal")
 show(io::IO, node::And)   = showfunc(io, node, "And")
 #showfunc(io::IO, node::Func, name::String) = print(io,name,tuple(node.args...))
 function showfunc(io::IO, node::Func, name::String)
-    print(io,name,"(")
-    print_comma_list(io, node.args...)
-    print(io, ")")
+    print(io, name, enclose("(", comma_list(node.args...), ")"))
 end
 
 
@@ -115,9 +113,7 @@ function subslinks{T}(s::Subs, node::NodeSet{T})
 end
 
 function show(io::IO, nodes::NodeSet)
-    print(io, "NodeSet(")
-    print_comma_list(io, nodes.nodes...)
-    print(io, ")")
+    print(io, enclose("Nodeset(", comma_list(nodes.nodes...), ")"))
 end
 
 type Link{T<:Node} <: Node
