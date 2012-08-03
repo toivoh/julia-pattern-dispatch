@@ -4,7 +4,7 @@ require("pattern/utils.jl") # quot
 abstract CustomIO <: IO
 
 # ioprint can be overriden by the CustomIO
-ioprint(io::CustomIO, s::String) = (for c in s; ioprint(io, c); end)
+#ioprint(io::CustomIO, s::String) = (for c in s; ioprint(io, c); end)
 
 # @customio MyIO (<: CustomIO) redirects chars/string printing to ioprint()
 macro customio(Tsym)

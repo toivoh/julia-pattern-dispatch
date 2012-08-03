@@ -54,7 +54,7 @@ function print(io::PrintExpander, node::PrintNode)
     push(io.parts, PrintNode(node.env, items...))
     nothing
 end
-ioprint(io::PrintExpander, arg::String) = (push(io.parts, arg); nothing)
+#ioprint(io::PrintExpander, arg::String) = (push(io.parts, arg); nothing)
 ioprint(io::PrintExpander, arg) = (push(io.parts, arg); nothing)
 
 function expand_print(arg)
@@ -75,6 +75,7 @@ type PrettySimple <: CustomIO
 end
 @customio PrettySimple
 
+ioprint(io::PrettySimple, s::String) = (for c in s; ioprint(io, c); end)
 function ioprint(io::PrettySimple, c::Char)
     if io.freshline
         print(io.sink, " "^io.indent)
