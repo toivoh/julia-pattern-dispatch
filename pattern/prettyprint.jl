@@ -19,17 +19,12 @@ print(io::IO, node::PrintNode) = print(io, node.items...)
 
 type GroupEnv <: PrintEnv; end
 typealias GroupNode PrintNode{GroupEnv}
-
 defer_print(args...) = PrintNode(GroupEnv(), args...)
 
-comma_list() = ""
-function comma_list(first, args...)
-    items = {first}
-    for arg in args
-        push(items, ", ")
-        push(items, arg)
-    end
-    defer_print(items...)
+comma_list() = defer_print()
+function comma_list(args...)
+    if (length(args) == 0) return defer_print() end
+    defer_print({block(arg, ", ") for arg in args[1:(end-1)]}..., args[end])
 end
 
 
@@ -38,6 +33,11 @@ typealias IndentNode PrintNode{IndentEnv}
 
 indent(args...) = PrintNode(IndentEnv(), args...)
 enclose(args...) = defer_print(args[1], indent(args[2:end-1]...), args[end])
+
+
+type BlockEnv <: PrintEnv; end
+typealias BlockNode PrintNode{BlockEnv}
+block(args...) = PrintNode(BlockEnv(), args...)
 
 
 # ---- PrintExpander ----------------------------------------------------------
@@ -106,9 +106,11 @@ print(io::PrettySimple, node::GroupNode) = print(io, node.items...)
 print(io::PrettySimple, node::PrintNode) = printnode(io, node)
 
 function printnode(io::PrettySimple, node::PrintNode)
+    if (length(node.items) == 0) return end
     io.newnode = true
     print(io, node.items...)
     io.newnode = true
+    nothing
 end
 
 
