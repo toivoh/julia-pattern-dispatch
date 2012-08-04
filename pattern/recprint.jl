@@ -133,3 +133,8 @@ function recshow2(io::IO, arg)
     pprint(io, undent(50,treeify(record_show(arg))))
 end
 recshow2(arg) = recshow2(OUTPUT_STREAM, arg)
+
+function recshow3(io::IO, arg)
+    pprint(io, layout(50,treeify(record_show(arg))))
+end
+recshow3(arg) = recshow3(OUTPUT_STREAM, arg)

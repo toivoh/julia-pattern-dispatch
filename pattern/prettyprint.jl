@@ -126,6 +126,46 @@ pshow(io::IO, args...) = show(pretty(io), args...)
 pshow(args...) = pshow(OUTPUT_STREAM, args...)
 
 
+# -----------------------------------------------------------------------------
+
+type RowEnv <: PrintEnv
+    length::Int
+end
+typealias RowNode PrintNode{RowEnv}
+rownode(length::Int, args...) = RowNode(RowEnv(length), args...)
+
+strlen(node::RowNode) = node.env.length
+
+
+function layout(width::Int, arg::String)
+    if contains(arg, '\n') return arg end
+    len = strlen(arg)
+    if (len >= width) return arg end
+    rownode(len, arg)
+end
+
+function layout(width::Int, node::PrintNode)    
+    if isa(node, IndentNode)
+        width -= 2
+    end
+
+    items = {layout(width, item) for item in node.items}
+    if !all({isa(item, RowNode) for item in items}) return node end
+    
+#    @show items
+#    @show strlen(items[1])
+    len = sum([strlen(item) for item in items])
+    if (len >= width) return node end
+    
+    rownode(len, {defer_print(item.items) for item in items}...)
+#    rownode(len, items...)
+end
+
+
+
+
+
+# ---- undent -----------------------------------------------------------------
 peel(node::PrintNode) = length(node.items) == 1 ? node.items[1] : node
 peel(arg) = arg
 
