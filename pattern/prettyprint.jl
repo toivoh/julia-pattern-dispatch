@@ -70,13 +70,20 @@ type PrettySimple <: CustomIO
     sink::IO
     indent::Int
     freshline::Bool
+    newnode::Bool
 
-    PrettySimple(sink::IO) = new(sink, 0, false)
+    PrettySimple(sink::IO) = new(sink, 0, false, false)
 end
 @customio PrettySimple
 
 ioprint(io::PrettySimple, s::String) = (for c in s; ioprint(io, c); end)
 function ioprint(io::PrettySimple, c::Char)
+    if io.newnode && !io.freshline
+        print(io.sink, '\n')
+        io.freshline = true
+    end
+    io.newnode = false
+
     if io.freshline
         print(io.sink, " "^io.indent)
     end
@@ -88,15 +95,21 @@ function ioprint(io::PrettySimple, c::Char)
 end
 
 function print(io::PrettySimple, node::IndentNode)
-    if node.items=={""}; return; end
     indent = 2
     io.indent += indent
-#    print(io, node.items...)
-    print(io, '\n', node.items..., '\n')
+    printnode(io, node)
     io.indent -= indent
     nothing
 end
 
+print(io::PrettySimple, node::GroupNode) = print(io, node.items...)
+print(io::PrettySimple, node::PrintNode) = printnode(io, node)
+
+function printnode(io::PrettySimple, node::PrintNode)
+    io.newnode = true
+    print(io, node.items...)
+    io.newnode = true
+end
 
 
 pretty(io::PrettySimple) = io
