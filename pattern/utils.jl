@@ -11,10 +11,10 @@ end
 
 
 macro show(ex)
-    :(println(($string(ex)), "\t= ", sshow($ex)) )
+    :(println(($string(ex)), "\t= ", repr($ex)) )
 end
 macro showln(ex)
-    :(println(($string(ex)), "\n\t=", sshow($ex)) )
+    :(println(($string(ex)), "\n\t=", repr($ex)) )
 end
 
 macro test(ex)

@@ -36,9 +36,9 @@ function show(io, x)
 end
 
 # todo: fall back on jl_show_any here instead?
-default_show(io::IO, x::Union(Type,Function)) = print(io, sshow(x))
+default_show(io::IO, x::Union(Type,Function)) = print(io, repr(x))
 default_show(io::IO, x) = default_show(io, typeof(x), x)
-default_show(io::IO, T, x) = print(io, sshow(x))
+default_show(io::IO, T, x) = print(io, repr(x))
 
 const null_symbol = symbol("")
 
@@ -53,8 +53,8 @@ function default_show(io::IO, T::CompositeKind, x)
                   "in $(typeof(x))")
         end
     end
-    print(io, sshow(T), enclose("(", comma_list(values...), ")"))
-#    print(io, sshow(T), "("); print_comma_list(io, values...); print(io, ")")
+    print(io, repr(T), enclose("(", comma_list(values...), ")"))
+#    print(io, repr(T), "("); print_comma_list(io, values...); print(io, ")")
 end
 
 function print_comma_list(io::IO, args...)
