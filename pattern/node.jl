@@ -4,7 +4,7 @@ require("pattern/prettyprint.jl")
 abstract Node
 abstract   Event <: Node  # Node that for an action: Guard/Assign
 abstract   Value <: Node  # Node that produces a value
-abstract     Unknown     <: Value  
+abstract     Independent <: Value  # Node that might take on any value
 abstract     Computation <: Value  # Value that can be computed (from its deps)
 abstract       Source <: Computation  # Computation without dependencies
 
@@ -25,11 +25,11 @@ end
 
 #show(io::IO, node::Atom) = print(io, "Atom(", node.value, ")")
 
-type Variable <: Unknown
+type Variable <: Independent
     name::Symbol
 end
 
-typealias Leaf Union(Source, Unknown)
+typealias Leaf Union(Source, Variable)
 
 links(node::Leaf) = ()
 subslinks(s::Subs, node::Leaf) = node

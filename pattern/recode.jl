@@ -17,7 +17,7 @@ function tuplenet(arg::Node, ps...)
     NodeSet{Node}({p(p_apply(ref, arg, Atom(k))) for (p,k) = enumerate(ps)}...)
 end
 
-atompat(value)       = arg->atomnet(arg, value)
-varpat(name::Symbol) = arg->varnet( arg, name)
-typepat(T)           = arg->typenet(arg, T)
+atompat(value)       = arg->atomnet( arg, value)
+varpat(name::Symbol) = arg->varnet(  arg, name)
+typepat(T)           = arg->typenet( arg, T)
 tuplepat(ps...)      = arg->tuplenet(arg, ps...)
