@@ -1,0 +1,8 @@
+
+# list in patterns order of priority:
+@pattern begin
+    f(1)      = 42
+    f(x::Int) = x^2
+    f(x)      = x
+    f(x, y)   = x*y
+end
