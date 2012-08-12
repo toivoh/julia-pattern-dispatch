@@ -1,0 +1,8 @@
+
+performance/readability:
+ o Create temporaries for reused nodes
+ o Avoid as much tuple pattern code as possible for normal function args
+
+features:
+ o Vector patterns
+ o ~ for unification
