@@ -56,7 +56,6 @@ d_apply(f::Function, args...) = Apply(atom(f), args)
 assignvar(dest::Symbol, value::Node) = Assign(dest, value)
 gate(value::Node, guard::Node) = Gate(value, guard)
 
-
 # ---- code_match -------------------------------------------------------------
 
 type MatchCode
@@ -107,7 +106,6 @@ function ref(c::MatchCode, node::Node)
     c.results[node] = result
 end
 
-
 function code_match(node::Node)
     c = MatchCode()
     mark_reused(c, node)
@@ -115,7 +113,6 @@ function code_match(node::Node)
     c.code
 #    expr(:block, c.code)
 end
-
 
 # ---- pattern --> DAG --------------------------------------------------------
 
@@ -168,63 +165,3 @@ end
 
 recode(ex::Symbol) = :(varpat( $quot(ex)))
 recode(ex)         = :(atompat($quot(ex)))  # literal, hopefully
-
-
-# ---- @pattern ---------------------------------------------------------------
-
-macro pattern(block)
-    code_pattern(block)
-end
-function code_pattern(block)
-    @expect is_expr(block, :block)
-    
-    methods = {}
-    fnames  = {}
-    for fdef in block.args
-        if is_linenumber(fdef) continue end
-        sig, body = split_fdef(fdef)
-        fname, signature = sig.args[1], sig.args[2:end]
-
-        sigpat = recode(expr(:tuple, signature))
-        push(methods, :(($sigpat), ($quot(body))))
-
-        push(fnames, fname)
-        @show signature
-        @show sigpat
-    end
-
-    fname = common_value(fnames)
-    @show fname
-
-    quote
-        fdef = code_patterns(($quot(fname)), $methods...)
-        eval(fdef)
-    end
-end
-
-function code_patterns(fname::Symbol, methods...)
-    body_code = {}
-    for (p, body) in methods
-        net = p(Arg())
-        @show net
-
-        code = code_match(net)
-        @show(code)
-        println()
-        
-        method_code = quote
-            match, result = let
-                ($code...)
-                (true, ($body))
-            end
-            if match return result end
-        end
-        append!(body_code, method_code.args)
-    end
-    push(body_code, :( error($"no matching pattern for $fname") ))
-#    @show expr(:block, body_code)
-
-    fdef = :( ($fname)(($arg_symbol)...) = ($expr(:block, body_code)) )
-    @show fdef
-    fdef
-end
