@@ -9,7 +9,7 @@ show(io, x) = isa(io,IOStream) ? ccall(:jl_show_any, Void, (Any,Any,), io, x) :
 @pattern begin
     f(1)      = 42
     f(::Int)  = 5
-#    f(x)      = x
+    f(x)      = x
 end
 
 @show f(1)

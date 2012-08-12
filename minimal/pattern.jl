@@ -16,6 +16,10 @@ type Atom     <: Node; value;          end
 type Variable <: Node; name::Symbol;   end
 type Guard    <: Node; pred::Node;     end
 type NodeSet  <: Node; set::Set{Node}; end
+type Assign <: Node
+    dest::Symbol
+    value::Node
+end
 type Apply <: Node
     f::Node
     args::(Node...)
@@ -29,9 +33,11 @@ code_match(c, node::Atom)     = quot(node.value)
 code_match(c, node::Variable) = node.name
 code_match(c, node::Guard)    = emitguard(c, c[node.pred])
 code_match(c, node::NodeSet)  = Set({c[member] for member in node.set})
+code_match(c, node::Assign)   = emit(c, :( ($node.dest) = ($c[node.value]) ))
 function code_match(c, node::Apply)
     expr(:call, c[node.f], {c[arg] for arg in node.args}...)
 end
+
 
 atom(value)            = Atom(value)
 variable(name::Symbol) = Variable(name)
@@ -39,6 +45,8 @@ variable(name::Symbol) = Variable(name)
 guard(pred::Node) = Guard(pred)
 nodeset(nodes::Node...) = NodeSet(Set{Node}(nodes...))
 d_apply(f::Function, args...) = Apply(atom(f), args)
+assignvar(dest::Symbol, value::Node) = Assign(dest, value)
+
 
 # ---- code_match -------------------------------------------------------------
 
@@ -52,7 +60,7 @@ emit(c::MatchCode, ex) = (push(c.code, ex); nothing)
 function emitguard(c::MatchCode, pred_ex)
     emit(c, :(
         if !($pred_ex)
-            return false
+            return (false, nothing)
         end
     ))
 end
@@ -73,7 +81,8 @@ end
 # ---- pattern --> DAG --------------------------------------------------------
 
 atompat(value)       = arg->guard(d_apply(egal, arg, atom(value)))
-varpat(name::Symbol) = arg->guard(d_apply(egal, arg, variable(name)))
+#varpat(name::Symbol) = arg->guard(d_apply(egal, arg, variable(name)))
+varpat(name::Symbol) = arg->assignvar(name, arg)
 typepat(T)           = arg->guard(d_apply(isa,  arg, atom(T)))
 meetpat(p, q)        = arg->nodeset(p(arg), q(arg))
 
@@ -145,11 +154,11 @@ function code_patterns(fname::Symbol, methods...)
         println()
         
         method_code = quote
-            match = let
+            match, result = let
                 ($code...)
-                true
+                (true, ($body))
             end
-            if match return ($body) end
+            if match return result end
         end
         append!(body_code, method_code.args)
     end
