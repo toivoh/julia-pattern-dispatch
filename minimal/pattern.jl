@@ -26,13 +26,17 @@ const arg_symbol = gensym("arg")
 code_match(c, node::Arg)      = arg_symbol
 code_match(c, node::Atom)     = quot(node.value)
 code_match(c, node::Variable) = node.name
-code_match(c, node::Guard)    = emitguard(c, c[node.pred])
+code_match(c, node::Guard)    = emit_guard(c, c[node.pred])
 code_match(c, node::NodeSet)  = Set({c[member] for member in node.set})
-code_match(c, node::Assign)   = emit(c, :( ($node.dest) = ($c[node.value]) ))
+code_match(c, node::Assign)   = emit_assign(c, node.dest, c[node.value])
 code_match(c, node::Gate)     = (c[node.guard]; c[node.value])
 function code_match(c, node::Apply)
     expr(:call, c[node.f], {c[arg] for arg in node.args}...)
 end
+
+
+
+
 
 
 atom(value)            = Atom(value)
@@ -49,17 +53,26 @@ gate(value::Node, guard::Node) = Gate(value, guard)
 
 type MatchCode
     results::Dict{Node, Any}
+    assigned::Set{Symbol}
     code::Vector
 
-    MatchCode() = new(Dict{Node, Any}(), {})
+    MatchCode() = new(Dict{Node, Any}(), Set{Symbol}(), {})
 end
 emit(c::MatchCode, ex) = (push(c.code, ex); nothing)
-function emitguard(c::MatchCode, pred_ex)
+function emit_guard(c::MatchCode, pred_ex)
     emit(c, :(
         if !($pred_ex)
             return (false, nothing)
         end
     ))
+end
+function emit_assign(c::MatchCode, dest::Symbol, value)
+    if has(c.assigned, dest) 
+        emit_guard(c, :( egal(($dest), ($value)) ))
+    else
+        emit(c, :( ($dest) = ($value) ))
+        add(c.assigned, dest)
+    end
 end
 
 function ref(c::MatchCode, node::Node)
