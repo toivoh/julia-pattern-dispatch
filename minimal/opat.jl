@@ -13,8 +13,7 @@ function code_opat(block)
     fnames  = {}
     for fdef in block.args
         if is_linenumber(fdef) continue end
-        sig, body = split_fdef(fdef)
-        fname, signature = sig.args[1], sig.args[2:end]
+        fname, signature, body = split_fdef3(fdef)
 
         sigpat = recode(expr(:tuple, signature))
         push(methods, :(($sigpat), ($quot(body))))

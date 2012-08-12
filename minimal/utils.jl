@@ -23,6 +23,8 @@ function split_fdef(fdef::Expr)
 end
 split_fdef(f::Any) = error("split_fdef: expected function definition, got\n$f")
 
+split_fdef3(fdef) = ((s, b) = split_fdef(fdef); (s.args[1], s.args[2:end], b))
+
 function common_value(xs)
     k = start(xs)
     @expect !done(xs, k)
