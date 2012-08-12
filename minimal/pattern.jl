@@ -136,8 +136,7 @@ function code_pattern(block)
         sig, body = split_fdef(fdef)
         fname, signature = sig.args[1], sig.args[2:end]
 
-        @assert length(signature) == 1
-        sigpat = recode(signature[1])
+        sigpat = recode(expr(:tuple, signature))
         push(methods, :(($sigpat), ($quot(body))))
 
         push(fnames, fname)
@@ -176,8 +175,7 @@ function code_patterns(fname::Symbol, methods...)
     push(body_code, :( error($"no matching pattern for $fname") ))
 #    @show expr(:block, body_code)
 
-#    fdef = :( ($esc(fname))(arg_symbol) = ($expr(:block, body_code)) )
-    fdef = :( ($fname)(($arg_symbol)) = ($expr(:block, body_code)) )
+    fdef = :( ($fname)(($arg_symbol)...) = ($expr(:block, body_code)) )
     @show fdef
     fdef
 end

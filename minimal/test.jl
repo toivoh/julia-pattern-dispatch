@@ -11,12 +11,14 @@ show(io, x) = isa(io,IOStream) ? ccall(:jl_show_any, Void, (Any,Any,), io, x) :
     f(::Int)  = 5
     f((x,y))  = x*y
     f(x)      = x
+    f(x,y)    = x+y
 end
 
 @show f(1)
 @show f(2)
 @show f((6,5))
 @show f(2.5)
+@show f(3,4)
 
 # patterns = quote
 #     f(1)          = 42
