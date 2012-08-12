@@ -16,14 +16,9 @@ type Atom     <: Node; value;          end
 type Variable <: Node; name::Symbol;   end
 type Guard    <: Node; pred::Node;     end
 type NodeSet  <: Node; set::Set{Node}; end
-type Assign <: Node
-    dest::Symbol
-    value::Node
-end
-type Apply <: Node
-    f::Node
-    args::(Node...)
-end
+type Assign   <: Node; dest::Symbol; value::Node     end
+type Gate     <: Node; value::Node;  guard::Node     end 
+type Apply    <: Node; f::Node;      args::(Node...) end
 
 
 const arg_symbol = gensym("arg")
@@ -34,6 +29,7 @@ code_match(c, node::Variable) = node.name
 code_match(c, node::Guard)    = emitguard(c, c[node.pred])
 code_match(c, node::NodeSet)  = Set({c[member] for member in node.set})
 code_match(c, node::Assign)   = emit(c, :( ($node.dest) = ($c[node.value]) ))
+code_match(c, node::Gate)     = (c[node.guard]; c[node.value])
 function code_match(c, node::Apply)
     expr(:call, c[node.f], {c[arg] for arg in node.args}...)
 end
@@ -46,6 +42,7 @@ guard(pred::Node) = Guard(pred)
 nodeset(nodes::Node...) = NodeSet(Set{Node}(nodes...))
 d_apply(f::Function, args...) = Apply(atom(f), args)
 assignvar(dest::Symbol, value::Node) = Assign(dest, value)
+gate(value::Node, guard::Node) = Gate(value, guard)
 
 
 # ---- code_match -------------------------------------------------------------
@@ -85,6 +82,18 @@ atompat(value)       = arg->guard(d_apply(egal, arg, atom(value)))
 varpat(name::Symbol) = arg->assignvar(name, arg)
 typepat(T)           = arg->guard(d_apply(isa,  arg, atom(T)))
 meetpat(p, q)        = arg->nodeset(p(arg), q(arg))
+tuplepat(ps...)      = arg->tuplenet(arg, ps...)
+
+function tuplenet(arg, ps...)
+    n = length(ps)
+    arg = gate(arg, typepat(Tuple)(arg))
+
+    lguard = atompat(length(ps))(d_apply(length, arg))
+    if n == 0; return lguard; end
+    arg = gate(arg, lguard)
+
+    nodeset({p(d_apply(ref, arg, atom(k))) for (p, k) in enumerate(ps)}...)
+end
 
 # ---- recode -----------------------------------------------------------------
 
@@ -101,6 +110,8 @@ function recode(ex::Expr)
             tpat   = recode_typepat(args[2])
             return :(meetpat(($argpat), ($tpat)))
         end
+    elseif head === :tuple
+        return :(tuplepat(${recode(arg) for arg in args}...))
     else
         error("Unimplemented!")
     end
