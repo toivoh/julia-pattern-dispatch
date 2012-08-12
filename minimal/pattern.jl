@@ -1,31 +1,43 @@
 
 
 const is_linenumber = Base.is_linenumber
+const is_quoted     = Base.is_quoted
 const unquoted      = Base.unquoted
 
 require("utils.jl")
 
-const egal = is
+egal(x,y) = is(x,y)
 
 # ---- nodes ------------------------------------------------------------------
 
 abstract Node
+abstract   Source <: Node
 
-type Arg      <: Node; end
-type Atom     <: Node; value;          end
-type Variable <: Node; name::Symbol;   end
+type Arg      <: Source; end
+type Atom     <: Source; value;        end
+#type Variable <: Node; name::Symbol;   end
 type Guard    <: Node; pred::Node;     end
 type NodeSet  <: Node; set::Set{Node}; end
 type Assign   <: Node; dest::Symbol; value::Node     end
 type Gate     <: Node; value::Node;  guard::Node     end 
 type Apply    <: Node; f::Node;      args::(Node...) end
 
+#typealias Leaf Union(Source, Variable)
+typealias Leaf Source
+
+get_links(node::Leaf)    = ()
+get_links(node::Guard)   = (node.pred,)
+get_links(node::NodeSet) = node.set
+get_links(node::Assign)  = (node.value,)
+get_links(node::Gate)    = (node.value, node.guard)
+get_links(node::Apply)   = {node.f, node.args...}
+
 
 const arg_symbol = gensym("arg")
 
 code_match(c, node::Arg)      = arg_symbol
 code_match(c, node::Atom)     = quot(node.value)
-code_match(c, node::Variable) = node.name
+#code_match(c, node::Variable) = node.name
 code_match(c, node::Guard)    = emit_guard(c, c[node.pred])
 code_match(c, node::NodeSet)  = Set({c[member] for member in node.set})
 code_match(c, node::Assign)   = emit_assign(c, node.dest, c[node.value])
@@ -35,12 +47,8 @@ function code_match(c, node::Apply)
 end
 
 
-
-
-
-
 atom(value)            = Atom(value)
-variable(name::Symbol) = Variable(name)
+#variable(name::Symbol) = Variable(name)
 
 guard(pred::Node) = Guard(pred)
 nodeset(nodes::Node...) = NodeSet(Set{Node}(nodes...))
@@ -52,11 +60,11 @@ gate(value::Node, guard::Node) = Gate(value, guard)
 # ---- code_match -------------------------------------------------------------
 
 type MatchCode
-    results::Dict{Node, Any}
+    results::Dict{Node,Any}
     assigned::Set{Symbol}
     code::Vector
 
-    MatchCode() = new(Dict{Node, Any}(), Set{Symbol}(), {})
+    MatchCode() = new(Dict{Node,Any}(), Set{Symbol}(), {})
 end
 emit(c::MatchCode, ex) = (push(c.code, ex); nothing)
 function emit_guard(c::MatchCode, pred_ex)
@@ -70,18 +78,39 @@ function emit_assign(c::MatchCode, dest::Symbol, value)
     if has(c.assigned, dest) 
         emit_guard(c, :( egal(($dest), ($value)) ))
     else
-        emit(c, :( ($dest) = ($value) ))
         add(c.assigned, dest)
+        emit(c, :( ($dest) = ($value) ))
     end
 end
 
-function ref(c::MatchCode, node::Node)
-    if has(c.results, node) return c.results[node] end
-    c.results[node] = code_match(c, node)
+abstract Usage
+type Used   <: Usage; end
+type Reused <: Usage; end
+
+mark_reused(c::MatchCode, node::Leaf) = nothing
+function mark_reused(c::MatchCode, node::Node)
+    if has(c.results, node) c.results[node] = Reused(); return end
+    c.results[node] = Used()
+    for link in get_links(node) mark_reused(c, link) end
 end
+
+function ref(c::MatchCode, node::Node)
+    r = get(c.results, node, Used())
+    if !isa(r, Usage) return r; end
+    result = code_match(c, node)
+    if is(r, Reused()) &&
+        !(isa(result, Symbol) || is_quoted(result) || is(result, nothing))
+        temp = gensym("temp")
+        emit_assign(c, temp, result)
+        result = temp
+    end
+    c.results[node] = result
+end
+
 
 function code_match(node::Node)
     c = MatchCode()
+    mark_reused(c, node)
     c[node]
     c.code
 #    expr(:block, c.code)

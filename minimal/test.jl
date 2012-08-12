@@ -14,6 +14,7 @@ show(io, x) = isa(io,IOStream) ? ccall(:jl_show_any, Void, (Any,Any,), io, x) :
     f({x,y})   = (x, y)
     f(x)       = x
     f(x,x)     = x
+    f(x,(y,z)) = (z,y,x)
     f(x,y)     = x+y
 end
 
@@ -25,6 +26,7 @@ r={1,9}; r[1] = r
 @test f({1,2}) === (1,2)
 @test f(2.5) === 2.5
 @test f(4,4) === 4
+@test f(1,(2,3)) === (3,2,1)
 @test f(3,4) === 7
 
 # patterns = quote
