@@ -94,7 +94,7 @@ atompat(value)       = arg->guard(d_apply(egal, arg, atom(value)))
 #varpat(name::Symbol) = arg->guard(d_apply(egal, arg, variable(name)))
 varpat(name::Symbol) = arg->assignvar(name, arg)
 typepat(T)           = arg->guard(d_apply(isa,  arg, atom(T)))
-meetpat(p, q)        = arg->nodeset(p(arg), q(arg))
+meetpat(ps...)       = arg->nodeset({p(arg) for p in ps}...)
 tuplepat(ps...)      = arg->seqnet(arg, Tuple,  ps...)
 vectorpat(ps...)     = arg->seqnet(arg, Vector, ps...)
 
@@ -113,6 +113,7 @@ end
 
 recode_typepat(Tname) = :(typepat($esc(Tname)))
 
+recode(exs::Vector) = {recode(ex) for ex in exs}
 function recode(ex::Expr)
     head, args = ex.head, ex.args
     nargs = length(args)
@@ -125,12 +126,15 @@ function recode(ex::Expr)
             return :(meetpat(($argpat), ($tpat)))
         end
     elseif head === :tuple
-        return :(tuplepat(${recode(arg) for arg in args}...))
+        return :(tuplepat($recode(args)...))
     elseif head === :cell1d
-        return :(vectorpat(${recode(arg) for arg in args}...))
-    else
-        error("Unimplemented!")
+        return :(vectorpat($recode(args)...))
+    elseif head === :call
+        if nargs == 3 && args[1] == :(~)
+            return :(meetpat($recode(args[2:end])...))
+        end
     end
+    error("Unimplemented!")
 end
 
 recode(ex::Symbol) = :(varpat( $quot(ex)))
