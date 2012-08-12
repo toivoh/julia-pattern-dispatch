@@ -12,6 +12,10 @@ show(io, x) = isa(io,IOStream) ? ccall(:jl_show_any, Void, (Any,Any,), io, x) :
 #    f(x)      = x
 end
 
+@show f(1)
+@show f(2)
+@show f(2.5)
+
 # patterns = quote
 #     f(1)          = 42
 #     f(x::Integer) =  x^2

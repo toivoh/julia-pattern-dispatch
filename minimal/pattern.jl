@@ -129,7 +129,8 @@ function code_pattern(block)
     @show fname
 
     quote
-        code_patterns(($quot(fname)), $methods...)
+        fdef = code_patterns(($quot(fname)), $methods...)
+        eval(fdef)
     end
 end
 
@@ -152,8 +153,11 @@ function code_patterns(fname::Symbol, methods...)
         end
         append!(body_code, method_code.args)
     end
-    @show expr(:block, body_code)
+    push(body_code, :( error($"no matching pattern for $fname") ))
+#    @show expr(:block, body_code)
 
 #    fdef = :( ($esc(fname))(arg_symbol) = ($expr(:block, body_code)) )
-    fdef = :( ($fname)(arg_symbol) = ($expr(:block, body_code)) )
+    fdef = :( ($fname)(($arg_symbol)) = ($expr(:block, body_code)) )
+    @show fdef
+    fdef
 end
