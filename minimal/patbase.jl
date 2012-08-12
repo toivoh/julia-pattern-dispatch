@@ -139,29 +139,30 @@ end
 
 recode_typepat(Tname) = :(typepat($esc(Tname)))
 
-recode(exs::Vector) = {recode(ex) for ex in exs}
-function recode(ex::Expr)
+recode(vars::Set{Symbol}, exs::Vector) = {recode(vars, ex) for ex in exs}
+function recode(vars::Set{Symbol}, ex::Expr)
     head, args = ex.head, ex.args
     nargs = length(args)
     if head === doublecolon
         if nargs == 1
             return recode_typepat(args[1])
         else
-            argpat = recode(args[1])
+            argpat = recode(vars, args[1])
             tpat   = recode_typepat(args[2])
             return :(meetpat(($argpat), ($tpat)))
         end
     elseif head === :tuple
-        return :(tuplepat($recode(args)...))
+        return :(tuplepat($recode(vars, args)...))
     elseif head === :cell1d
-        return :(vectorpat($recode(args)...))
+        return :(vectorpat($recode(vars, args)...))
     elseif head === :call
         if nargs == 3 && args[1] == :(~)
-            return :(meetpat($recode(args[2:end])...))
+            return :(meetpat($recode(vars, args[2:end])...))
         end
     end
     error("Unimplemented!")
 end
+recode(vars::Set{Symbol}, ex::Symbol) = (add(vars, ex); :(varpat($quot(ex))))
+recode(vars::Set{Symbol}, ex) = :(atompat($quot(ex)))  # literal, hopefully
 
-recode(ex::Symbol) = :(varpat( $quot(ex)))
-recode(ex)         = :(atompat($quot(ex)))  # literal, hopefully
+recode(ex) = (vars=Set{Symbol}(); p=recode(vars, ex); ([vars...], p))

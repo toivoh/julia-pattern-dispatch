@@ -15,12 +15,16 @@ function code_opat(block)
         if is_linenumber(fdef) continue end
         fname, signature, body = split_fdef3(fdef)
 
-        sigpat = recode(expr(:tuple, signature))
-        push(methods, :(($sigpat), ($quot(body))))
+        vars, pattern = recode(expr(:tuple, signature))
+        bodyfun = expr(:(->), expr(:tuple, vars...), body)
+        @show bodyfun
+        push(methods, :(($pattern), ($quot(vars)), ($bodyfun)))
 
         push(fnames, fname)
         @show signature
-        @show sigpat
+        @show vars
+        @show pattern
+        @show methods[end].args[3]
     end
 
     fname = common_value(fnames)
@@ -34,7 +38,7 @@ end
 
 function code_opat_fdef(fname::Symbol, methods...)
     body_code = {}
-    for (p, body) in methods
+    for (p, argnames, fun) in methods
         net = p(Arg())
         @show net
 
@@ -45,7 +49,7 @@ function code_opat_fdef(fname::Symbol, methods...)
         method_code = quote
             match, result = let
                 ($code...)
-                (true, ($body))
+                (true, ($quot(fun))($argnames...))
             end
             if match return result end
         end
