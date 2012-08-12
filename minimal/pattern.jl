@@ -95,11 +95,12 @@ atompat(value)       = arg->guard(d_apply(egal, arg, atom(value)))
 varpat(name::Symbol) = arg->assignvar(name, arg)
 typepat(T)           = arg->guard(d_apply(isa,  arg, atom(T)))
 meetpat(p, q)        = arg->nodeset(p(arg), q(arg))
-tuplepat(ps...)      = arg->tuplenet(arg, ps...)
+tuplepat(ps...)      = arg->seqnet(arg, Tuple,  ps...)
+vectorpat(ps...)     = arg->seqnet(arg, Vector, ps...)
 
-function tuplenet(arg, ps...)
+function seqnet(arg, T, ps...)
     n = length(ps)
-    arg = gate(arg, typepat(Tuple)(arg))
+    arg = gate(arg, typepat(T)(arg))
 
     lguard = atompat(length(ps))(d_apply(length, arg))
     if n == 0; return lguard; end
@@ -125,6 +126,8 @@ function recode(ex::Expr)
         end
     elseif head === :tuple
         return :(tuplepat(${recode(arg) for arg in args}...))
+    elseif head === :cell1d
+        return :(vectorpat(${recode(arg) for arg in args}...))
     else
         error("Unimplemented!")
     end
