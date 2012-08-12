@@ -15,12 +15,12 @@ show(io, x) = isa(io,IOStream) ? ccall(:jl_show_any, Void, (Any,Any,), io, x) :
     f(x,y)    = x+y
 end
 
-@show f(1)
-@show f(2)
-@show f((6,5))
-@show f(2.5)
-@show f(4,4)
-@show f(3,4)
+@test f(1) === 42
+@test f(2) === 5
+@test f((6,5)) === 30
+@test f(2.5) === 2.5
+@test f(4,4) === 4
+@test f(3,4) === 7
 
 # patterns = quote
 #     f(1)          = 42
