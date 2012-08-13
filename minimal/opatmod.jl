@@ -1,4 +1,6 @@
 
+require("immutable.jl")
+
 module OPat
 import Base.*
 

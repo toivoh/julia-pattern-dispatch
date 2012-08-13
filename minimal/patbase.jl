@@ -1,4 +1,6 @@
 
+import Immutable.*
+
 const is_linenumber = Base.is_linenumber
 const is_quoted     = Base.is_quoted
 const unquoted      = Base.unquoted
@@ -10,14 +12,14 @@ egal(x,y) = is(x,y)
 abstract Node
 abstract   Source <: Node
 
-type Arg      <: Source; end
-type Atom     <: Source; value;        end
-#type Variable <: Node; name::Symbol;   end
-type Guard    <: Node; pred::Node;     end
-type NodeSet  <: Node; set::Set{Node}; end
-type Assign   <: Node; dest::Symbol; value::Node     end
-type Gate     <: Node; value::Node;  guard::Node     end 
-type Apply    <: Node; f::Node;      args::(Node...) end
+@immutable type Arg      <: Source; end
+@immutable type Atom     <: Source; value;        end
+#@immutable type Variable <: Node; name::Symbol;   end
+@immutable type Guard    <: Node; pred::Node;     end
+@immutable type NodeSet  <: Node; set::Set{Node}; end
+@immutable type Assign   <: Node; dest::Symbol; value::Node     end
+@immutable type Gate     <: Node; value::Node;  guard::Node     end 
+@immutable type Apply    <: Node; f::Node;      args::(Node...) end
 
 #typealias Leaf Union(Source, Variable)
 typealias Leaf Source

@@ -1,4 +1,6 @@
 
+require("immutable.jl")
+
 module Pat
 import Base.*
 
