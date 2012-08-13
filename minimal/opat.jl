@@ -27,24 +27,23 @@ end
 
 function code_opat_fdef(fname::Symbol, methods...)
     body_code = {}
-    for (net, argnames, fun) in methods
-        @show net
+    for m in methods
+        @show m.sig
 
-        code = code_match(net)
-        @show(code)
+        matchcode = code_match(m.sig)
+        @show(matchcode)
         println()
         
         method_code = quote
             match, result = let
-                ($code...)
-                (true, ($quot(fun))($argnames...))
+                ($matchcode...)
+                (true, ($quot(m.body))($m.args...))
             end
             if match return result end
         end
         append!(body_code, method_code.args)
     end
     push(body_code, :( error($"no matching pattern for $fname") ))
-#    @show expr(:block, body_code)
 
     fdef = :( ($fname)(($arg_symbol)...) = ($expr(:block, body_code)) )
     @show fdef

@@ -165,8 +165,13 @@ end
 recode(vars::Set{Symbol}, ex::Symbol) = (add(vars, ex); :(varpat($quot(ex))))
 recode(vars::Set{Symbol}, ex) = :(atompat($quot(ex)))  # literal, hopefully
 
-recode(ex) = (vars=Set{Symbol}(); p=recode(vars, ex); ([vars...], p))
+recode(ex) = (vars=Set{Symbol}(); p=recode(vars, ex); (Symbol[vars...], p))
 
+type PatternMethod
+    sig::Node
+    args::Vector{Symbol}
+    body::Function
+end
 
 function recode_fdef(fdef)
     fname, signature, body = split_fdef3(fdef)
@@ -179,5 +184,5 @@ function recode_fdef(fdef)
     @show vars
     @show pattern
     
-    fname, :(($pattern)(Arg()), ($quot(vars)), ($bodyfun))
+    fname, :(PatternMethod(($pattern)(Arg()), ($quot(vars)), ($bodyfun)))
 end
