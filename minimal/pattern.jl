@@ -1,45 +1,43 @@
 
-require("opat.jl")
-
 type PatternFunction
     fname::Symbol
-    methods::Vector
+    methods::Vector{PatternMethod}
 
-    PatternFunction(fname::Symbol) = new(fname, {})
+    PatternFunction(fname::Symbol) = new(fname, PatternMethod[])
 end
 
-function add(pf::PatternFunction, signature, body)
-    push(pf.methods, (signature, body))
-    eval(code_opat_fdef(pf.fname, pf.methods))
+function add(pf::PatternFunction, m::PatternMethod)
+    push(pf.methods, m)
+    eval( code_pattern_function(pf.fname, pf.methods) )
 end
 
 
 const patfun_table = Dict{Function,PatternFunction}()
 
+get_pf(fname::Symbol, ::Nothing) = PatternFunction(fname)
+function get_pf(fname::Symbol, f::Function)
+    if !has(patfun_table, f) pf_error(fname); end
+    patfun_table[f]
+end
+get_pf(fname::Symbol, f) = pf_error(fname)
+function pf_error(fname::Symbol)
+    error("\nin @pattern method definition: $fname is not a pattern function")
+end
+
 macro pattern(fdef)
     code_pattern(fdef)
 end
 function code_pattern(fdef)
-    fname, signature, body = split_fdef3(fdef)    
-    pattern = recode(expr(:tuple, signature))
+    fname, method_ex = recode_fdef(fdef)
     
     quote
-        mtable=nothing
-        local fun
+        f = nothing
         try
-            fun = ($esc(fname))
-        catch e
-            mtable = PatternFunction($quot(fname))
-            const ($esc(fname)) = (args...)->dispatch((mtable), args)
-            patfun_table[$esc(fname)] = mtable
+            f = ($esc(fname))
         end
-        if is(mtable, nothing)
-            if !(isa(fun, Function) && has(patfun_table, fun))
-                error("\nin @pattern method definition: ", ($string(fname)), 
-                " is not a pattern function")
-            end
-            mtable = patfun_table[fun]
-        end
-        add(mtable, ($quot(pattern)), ($quot(body)))
+        pf = get_pf($quot(fname), f)
+        add(pf, $method_ex)
+        
+        if f === nothing; patfun_table[$esc(fname)] = pf; end
     end
 end
