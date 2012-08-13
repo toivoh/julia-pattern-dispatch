@@ -1,4 +1,20 @@
 
+function guards(nset::NodeSet)
+    gs = {}
+    for node in filter(node->isa(node, Guard), nset) push(gs, node) end
+    nodeset(gs...)
+end
+guards(node::Node) = guards(nodeset(node))
+
+join(sets::NodeSet...) = nodeset(union({Set{Node}(set...) for set in sets}...)...)
+
+<=(x::NodeSet, y::NodeSet) = (join(x,y) == y)
+
+const false_guard    = guard(atom(false))
+const false_guardset = nodeset(false_guard)
+is_falseguard(node::Node) = (node == false_guard) || (node == false_guardset)
+
+
 # ---- PatternFunction --------------------------------------------------------
 
 type PatternFunction
@@ -19,9 +35,9 @@ function addmethod(pf::PatternFunction, m::PatternMethod)
     n = length(ms)
     i = n+1
     for k = 1:n
-        if !(feas(m.sig) <= feas(ms[k].sig)) continue end
+        if !(guards(m.sig) >= guards(ms[k].sig)) continue end
         # equal signature ==> replace
-        if   feas(m.sig) == feas(ms[k].sig) ms[k] = m; return
+        if   guards(m.sig) == guards(ms[k].sig) ms[k] = m; return
         else                                i = k; break
         end
     end
@@ -32,9 +48,9 @@ end
 function check_ambiguity(pf::PatternFunction, m::PatternMethod)
     ms = pf.methods
     for m0 in ms
-        product = meet(feas(m0), feas(m))
-        if is_infeasible(product) continue end
-        if any([feas(mk) == feas(product) for mk in ms]) continue end
+        product = join(guards(m0.sig), guards(m.sig))
+        if is_falseguard(product) continue end
+        if any([guards(mk.sig) == guards(product) for mk in ms]) continue end
         
         println("Warning: New @pattern method ", pf.fname, m.sig)
         println("         is ambiguous with   ", pf.fname, m0.sig)
