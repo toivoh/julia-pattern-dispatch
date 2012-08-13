@@ -20,14 +20,18 @@ abstract   Source <: Node
 @immutable type Gate     <: Node; value::Node;  guard::Node     end 
 @immutable type Apply    <: Node; f::Node;      args::(Node...) end
 
-@immutable type NodeSet  <: Node; set::Set{Node}; end
-nodeset(nodes::Node...) = NodeSet(Set{Node}(nodes...))
-get_links(node::NodeSet) = node
+@immutable type NodeSet  <: Node; sorted::(Node...); end
+function nodeset(nodes::Node...)
+    set = Set{Node}(nodes...)
+    sorted = sort( (x,y)->(object_id(x) < object_id(y)), Node[set...] )
+    NodeSet(tuple(sorted...))
+end
+get_links(node::NodeSet) = node.sorted
 
-start(node::NodeSet)   = start(node.set)
-next(node::NodeSet, i) = next(node.set, i)
-done(node::NodeSet, i) = done(node.set, i)
-length(node::NodeSet)  = length(node.set)
+length(node::NodeSet)  = length(node.sorted)
+start(node::NodeSet)   = start(node.sorted)
+next(node::NodeSet, i) = next(node.sorted, i)
+done(node::NodeSet, i) = done(node.sorted, i)
 
 #typealias Leaf Union(Source, Variable)
 typealias Leaf Source
