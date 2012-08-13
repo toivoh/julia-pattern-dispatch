@@ -186,3 +186,28 @@ function recode_fdef(fdef)
     
     fname, :(PatternMethod(($pattern)(Arg()), ($quot(vars)), ($bodyfun)))
 end
+
+# ---- code_pattern_function --------------------------------------------------
+
+function code_pattern_function(fname::Symbol, methods...)
+    body_code = {}
+    for m in methods
+        @show m.sig
+        matchcode = code_match(m.sig)
+        (@show matchcode); println()
+        
+        method_code = quote
+            match, result = let
+                ($matchcode...)
+                (true, ($quot(m.body))($m.args...))
+            end
+            if match return result end
+        end
+        append!(body_code, method_code.args)
+    end
+    push(body_code, :( error($"no matching pattern for $fname") ))
+
+    fdef = :( ($fname)(($arg_symbol)...) = ($expr(:block, body_code)) )
+    @show fdef
+    fdef
+end
