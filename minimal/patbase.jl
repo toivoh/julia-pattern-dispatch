@@ -166,3 +166,18 @@ recode(vars::Set{Symbol}, ex::Symbol) = (add(vars, ex); :(varpat($quot(ex))))
 recode(vars::Set{Symbol}, ex) = :(atompat($quot(ex)))  # literal, hopefully
 
 recode(ex) = (vars=Set{Symbol}(); p=recode(vars, ex); ([vars...], p))
+
+
+function recode_fdef(fdef)
+    fname, signature, body = split_fdef3(fdef)
+
+    vars, pattern = recode(expr(:tuple, signature))
+    bodyfun = expr(:(->), expr(:tuple, vars...), body)
+
+    @show bodyfun
+    @show signature
+    @show vars
+    @show pattern
+    
+    fname, :(($pattern), ($quot(vars)), ($bodyfun))
+end

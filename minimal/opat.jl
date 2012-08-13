@@ -9,24 +9,13 @@ end
 function code_opat(block)
     @expect is_expr(block, :block)
     
-    methods = {}
-    fnames  = {}
+    methods, fnames = {}, {}
     for fdef in block.args
         if is_linenumber(fdef) continue end
-        fname, signature, body = split_fdef3(fdef)
-
-        vars, pattern = recode(expr(:tuple, signature))
-        bodyfun = expr(:(->), expr(:tuple, vars...), body)
-        @show bodyfun
-        push(methods, :(($pattern), ($quot(vars)), ($bodyfun)))
-
+        fname, method = recode_fdef(fdef)
         push(fnames, fname)
-        @show signature
-        @show vars
-        @show pattern
-        @show methods[end].args[3]
+        push(methods, method)
     end
-
     fname = common_value(fnames)
     @show fname
 
