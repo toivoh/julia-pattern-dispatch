@@ -1,10 +1,7 @@
 
-
 const is_linenumber = Base.is_linenumber
 const is_quoted     = Base.is_quoted
 const unquoted      = Base.unquoted
-
-require("utils.jl")
 
 egal(x,y) = is(x,y)
 
@@ -75,7 +72,7 @@ function emit_guard(c::MatchCode, pred_ex)
 end
 function emit_assign(c::MatchCode, dest::Symbol, value)
     if has(c.assigned, dest) 
-        emit_guard(c, :( egal(($dest), ($value)) ))
+        emit_guard(c, :( ($quot(egal))(($dest), ($value)) ))
     else
         add(c.assigned, dest)
         emit(c, :( ($dest) = ($value) ))
@@ -189,7 +186,7 @@ end
 
 # ---- code_pattern_function --------------------------------------------------
 
-function code_pattern_function(fname::Symbol, methods...)
+function code_pattern_function(fname::Symbol, methods)
     body_code = {}
     for m in methods
         @show m.sig

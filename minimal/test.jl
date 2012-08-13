@@ -1,11 +1,13 @@
 
-require("opat.jl")
+load("opatmod.jl")
 
-show(io, x) = isa(io,IOStream) ? ccall(:jl_show_any, Void, (Any,Any,), io, x) :
-              print(io, repr(x))
+module Test
+import Base.*
+import OPat.*
 
+load("utils.jl")
 
-# list in patterns order of priority:
+# list patterns in order of priority:
 @opat begin
     f(1)       = 42
     f(::Int)   = 5
@@ -29,3 +31,4 @@ r={1,9}; r[1] = r
 @test f(1,(2,3)) === (3,2,1)
 @test f(3,4) === 7
 
+end

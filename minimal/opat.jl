@@ -1,6 +1,4 @@
 
-require("patbase.jl")
-
 # ---- @pattern ---------------------------------------------------------------
 
 macro opat(block)
@@ -11,12 +9,12 @@ function code_opat(block)
     
     methods, fnames = {}, {}
     for fdef in filter(fdef->!is_linenumber(fdef), block.args)
-        fname, method = recode_fdef(fdef)
+        fname, method_ex = recode_fdef(fdef)
         push(fnames, fname)
-        push(methods, method)
+        push(methods, method_ex)
     end
     fname = common_value(fnames)
     @show fname
 
-    :(eval( code_pattern_function(($quot(fname)), $methods...) ))
+    :(eval( code_pattern_function(($quot(fname)), {$methods...}) ))
 end
