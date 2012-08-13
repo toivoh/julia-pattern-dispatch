@@ -179,5 +179,5 @@ function recode_fdef(fdef)
     @show vars
     @show pattern
     
-    fname, :(($pattern), ($quot(vars)), ($bodyfun))
+    fname, :(($pattern)(Arg()), ($quot(vars)), ($bodyfun))
 end

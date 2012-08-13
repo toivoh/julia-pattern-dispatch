@@ -27,8 +27,7 @@ end
 
 function code_opat_fdef(fname::Symbol, methods...)
     body_code = {}
-    for (p, argnames, fun) in methods
-        net = p(Arg())
+    for (net, argnames, fun) in methods
         @show net
 
         code = code_match(net)
