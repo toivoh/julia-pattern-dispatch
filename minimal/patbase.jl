@@ -16,17 +16,24 @@ abstract   Source <: Node
 @immutable type Atom     <: Source; value;        end
 #@immutable type Variable <: Node; name::Symbol;   end
 @immutable type Guard    <: Node; pred::Node;     end
-@immutable type NodeSet  <: Node; set::Set{Node}; end
 @immutable type Assign   <: Node; dest::Symbol; value::Node     end
 @immutable type Gate     <: Node; value::Node;  guard::Node     end 
 @immutable type Apply    <: Node; f::Node;      args::(Node...) end
+
+@immutable type NodeSet  <: Node; set::Set{Node}; end
+nodeset(nodes::Node...) = NodeSet(Set{Node}(nodes...))
+get_links(node::NodeSet) = node
+
+start(node::NodeSet)   = start(node.set)
+next(node::NodeSet, i) = next(node.set, i)
+done(node::NodeSet, i) = done(node.set, i)
+length(node::NodeSet)  = length(node.set)
 
 #typealias Leaf Union(Source, Variable)
 typealias Leaf Source
 
 get_links(node::Leaf)    = ()
 get_links(node::Guard)   = (node.pred,)
-get_links(node::NodeSet) = node.set
 get_links(node::Assign)  = (node.value,)
 get_links(node::Gate)    = (node.value, node.guard)
 get_links(node::Apply)   = {node.f, node.args...}
@@ -38,7 +45,7 @@ code_match(c, node::Arg)      = arg_symbol
 code_match(c, node::Atom)     = quot(node.value)
 #code_match(c, node::Variable) = node.name
 code_match(c, node::Guard)    = emit_guard(c, c[node.pred])
-code_match(c, node::NodeSet)  = Set({c[member] for member in node.set})
+code_match(c, node::NodeSet)  = Set({c[member] for member in node})
 code_match(c, node::Assign)   = emit_assign(c, node.dest, c[node.value])
 code_match(c, node::Gate)     = (c[node.guard]; c[node.value])
 function code_match(c, node::Apply)
@@ -50,7 +57,6 @@ atom(value)            = Atom(value)
 #variable(name::Symbol) = Variable(name)
 
 guard(pred::Node) = Guard(pred)
-nodeset(nodes::Node...) = NodeSet(Set{Node}(nodes...))
 d_apply(f::Function, args...) = Apply(atom(f), args)
 assignvar(dest::Symbol, value::Node) = Assign(dest, value)
 gate(value::Node, guard::Node) = Gate(value, guard)
