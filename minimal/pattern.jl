@@ -1,4 +1,6 @@
 
+# ---- PatternFunction --------------------------------------------------------
+
 type PatternFunction
     fname::Symbol
     methods::Vector{PatternMethod}
@@ -11,6 +13,7 @@ function add(pf::PatternFunction, m::PatternMethod)
     eval( code_pattern_function(pf.fname, pf.methods) )
 end
 
+# ---- @pattern ---------------------------------------------------------------
 
 const patfun_table = Dict{Function,PatternFunction}()
 
